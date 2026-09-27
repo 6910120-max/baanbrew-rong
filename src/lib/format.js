@@ -5,10 +5,7 @@ export function formatNumber(value, decimals = 0) {
   if (!numberFormats.has(decimals)) {
     numberFormats.set(
       decimals,
-      new Intl.NumberFormat('en-US', {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-      }),
+      new Intl.NumberFormat('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }),
     )
   }
   return numberFormats.get(decimals).format(value)
@@ -19,30 +16,44 @@ export function formatBaht(value, decimals = 0) {
   return `฿${formatNumber(value, decimals)}`
 }
 
-// YYYY-MM-DD strings are already Thai dates, so format them in UTC to keep the date from shifting
-const longDate = new Intl.DateTimeFormat('th-TH', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-  weekday: 'short',
-  timeZone: 'UTC',
-})
-const axisDate = new Intl.DateTimeFormat('th-TH', {
-  day: 'numeric',
-  month: 'short',
-  year: '2-digit',
-  timeZone: 'UTC',
-})
-const shortDate = new Intl.DateTimeFormat('th-TH', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-  timeZone: 'UTC',
-})
+/** Short baht for chart axes, e.g. 250000 -> "฿250k" */
+export function formatBahtCompact(value) {
+  if (Math.abs(value) >= 1_000_000) return `฿${formatNumber(value / 1_000_000, 1)}M`
+  if (Math.abs(value) >= 1000) return `฿${formatNumber(value / 1000, 0)}k`
+  return formatBaht(value)
+}
 
-const toDate = (date) => new Date(`${date}T00:00:00Z`)
+/** Percent, e.g. 46.4467 -> "46.4%" */
+export function formatPercent(value, decimals = 1) {
+  return `${formatNumber(value, decimals)}%`
+}
 
-export const formatLongDate = (date) => longDate.format(toDate(date))
-/** Short date for the axis, e.g. "2025-04-01" -> "1 เม.ย. 68" */
-export const formatAxisDate = (date) => axisDate.format(toDate(date))
-export const formatShortDate = (date) => shortDate.format(toDate(date))
+const toDate = (date) => new Date(`${date.length === 7 ? `${date}-01` : date}T00:00:00Z`)
+
+/**
+ * Date formatters for each language. YYYY-MM-DD strings are already Thai dates,
+ * so format them in UTC to keep the date from shifting.
+ * th uses the Buddhist calendar (2568), en uses the Gregorian calendar (2025)
+ */
+function buildDateFormatters(lang) {
+  const locale = lang === 'th' ? 'th-TH' : 'en-GB'
+  const make = (options) => new Intl.DateTimeFormat(locale, { timeZone: 'UTC', ...options })
+  const axis = make({ day: 'numeric', month: 'short', year: '2-digit' })
+  const long = make({ weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+  const short = make({ day: 'numeric', month: 'short', year: 'numeric' })
+  const month = make({ month: 'short', year: '2-digit' })
+  const monthLong = make({ month: 'long', year: 'numeric' })
+  return {
+    axisDate: (d) => axis.format(toDate(d)), //   th "1 เม.ย. 68"   en "1 Apr 25"
+    longDate: (d) => long.format(toDate(d)), //   th "อ. 1 เม.ย. 2568"
+    shortDate: (d) => short.format(toDate(d)), // th "1 เม.ย. 2568"
+    month: (m) => month.format(toDate(m)), //     th "เม.ย. 68"      en "Apr 25"
+    monthLong: (m) => monthLong.format(toDate(m)),
+  }
+}
+
+const dateFormatters = { th: buildDateFormatters('th'), en: buildDateFormatters('en') }
+
+export function getDateFormatters(lang) {
+  return dateFormatters[lang] ?? dateFormatters.th
+}

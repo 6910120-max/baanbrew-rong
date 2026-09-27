@@ -6,8 +6,17 @@ const REQUIRED_COLUMNS = ['order_id', 'datetime', 'branch', 'qty', 'unit_price',
 /** Error when the data file can't be found (Vercel returns 404, Vite dev returns index.html instead) */
 export class SalesFileMissingError extends Error {
   constructor() {
-    super('ไม่พบไฟล์ข้อมูล sales.csv')
+    super('sales.csv not found')
     this.name = 'SalesFileMissingError'
+  }
+}
+
+/** Error when the file is missing required columns (keeps the column list so the UI can show it in either language) */
+export class MissingColumnsError extends Error {
+  constructor(columns) {
+    super(`Missing columns: ${columns.join(', ')}`)
+    this.name = 'MissingColumnsError'
+    this.columns = columns
   }
 }
 
@@ -20,9 +29,7 @@ export function parseSalesCsv(text) {
   })
   const fields = result.meta.fields ?? []
   const missing = REQUIRED_COLUMNS.filter((col) => !fields.includes(col))
-  if (missing.length > 0) {
-    throw new Error(`ไฟล์ไม่ถูกรูปแบบ ขาดคอลัมน์: ${missing.join(', ')}`)
-  }
+  if (missing.length > 0) throw new MissingColumnsError(missing)
   return result.data
 }
 

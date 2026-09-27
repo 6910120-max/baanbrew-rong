@@ -1,10 +1,28 @@
 <!doctype html>
-<html lang="en">
+<html lang="th">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>baanbrew-dashboard</title>
+    <meta name="theme-color" content="#047857" />
+    <title>บ้านบรู Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      // Apply the saved theme/mode before the page renders so it doesn't flash the wrong color
+      try {
+        var s = JSON.parse(localStorage.getItem('baanbrew-settings') || '{}')
+        var mode = s.mode === 'light' || s.mode === 'dark' ? s.mode
+          : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        document.documentElement.dataset.theme = s.theme || 'green'
+        document.documentElement.dataset.mode = mode
+        if (s.lang) document.documentElement.lang = s.lang
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

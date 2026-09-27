@@ -1,22 +1,153 @@
 @import "tailwindcss";
 
-/* Chart colors (validated for colorblind safety and contrast against the surface) */
-:root {
-  --chart-1: #b45309;
-  --chart-muted: #c7c2bd;
-  --chart-surface: #ffffff;
-  --chart-grid: #e7e5e4;
-  --chart-axis: #78716c;
-  --chart-label: #44403c;
+/*
+  Colors are CSS variables swapped per data-theme (green/coffee/ocean) × data-mode (light/dark) on <html>
+  Tailwind classes use them via @theme below, e.g. bg-surface, text-ink, bg-brand
+  Chart colors (--c1, --c2) pass the colorblind-safety and surface-contrast checks for every combination
+*/
+@theme inline {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-brand: var(--c1);
+  --color-brand-2: var(--c2);
+  --color-brand-soft: var(--c1-soft);
+  --color-up: var(--up);
+  --color-down: var(--down);
+  --font-sans: "IBM Plex Sans Thai", "Noto Sans Thai", system-ui, "Segoe UI", sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --chart-1: #c2701f;
-    --chart-muted: #57534e;
-    --chart-surface: #1c1917;
-    --chart-grid: #292524;
-    --chart-axis: #a8a29e;
-    --chart-label: #d6d3d1;
+/* ---------- Green (default): emerald → teal gradient ---------- */
+:root,
+:root[data-theme="green"] {
+  --page: #eef6f1;
+  --surface: #ffffff;
+  --surface-2: #e6f1eb;
+  --line: #d3e5db;
+  --ink: #0e1f17;
+  --ink-2: #41564c;
+  --ink-3: #5c7067;
+  --c1: #059669;
+  --c2: #7c5cdb;
+  --grad: linear-gradient(120deg, #064e3b 0%, #047857 38%, #0d9488 72%, #10b981 100%);
+  --grad-bar: linear-gradient(90deg, #047857, #10b981);
+}
+:root[data-theme="green"][data-mode="dark"],
+:root:not([data-theme])[data-mode="dark"] {
+  --page: #08110d;
+  --surface: #111c17;
+  --surface-2: #182721;
+  --line: #22362d;
+  --ink: #e6f2ec;
+  --ink-2: #a6bcb2;
+  --ink-3: #82978d;
+  --c1: #10a37a;
+  --c2: #8b74ec;
+  --grad: linear-gradient(120deg, #022c22 0%, #065f46 40%, #0f766e 75%, #059669 100%);
+  --grad-bar: linear-gradient(90deg, #065f46, #10a37a);
+}
+
+/* ---------- Coffee ---------- */
+:root[data-theme="coffee"] {
+  --page: #f8f4ef;
+  --surface: #ffffff;
+  --surface-2: #f2ebe3;
+  --line: #e6dbcf;
+  --ink: #1f1711;
+  --ink-2: #5a4d42;
+  --ink-3: #72655a;
+  --c1: #b45309;
+  --c2: #0a7fa3;
+  --grad: linear-gradient(120deg, #3b2314 0%, #78350f 40%, #b45309 78%, #d97706 100%);
+  --grad-bar: linear-gradient(90deg, #92400e, #d97706);
+}
+:root[data-theme="coffee"][data-mode="dark"] {
+  --page: #120e0b;
+  --surface: #1f1a17;
+  --surface-2: #29221e;
+  --line: #3a302a;
+  --ink: #f3ece6;
+  --ink-2: #c4b6aa;
+  --ink-3: #9c8e82;
+  --c1: #c2701f;
+  --c2: #1c9bb5;
+  --grad: linear-gradient(120deg, #1c110a 0%, #4a2410 45%, #7c3f12 80%, #9a4f14 100%);
+  --grad-bar: linear-gradient(90deg, #7c3f12, #c2701f);
+}
+
+/* ---------- Ocean ---------- */
+:root[data-theme="ocean"] {
+  --page: #f1f5fb;
+  --surface: #ffffff;
+  --surface-2: #e8eef8;
+  --line: #d6dfee;
+  --ink: #0f172a;
+  --ink-2: #44516a;
+  --ink-3: #5f6c82;
+  --c1: #2563eb;
+  --c2: #c2410c;
+  --grad: linear-gradient(120deg, #1e1b4b 0%, #1e3a8a 38%, #2563eb 72%, #0891b2 100%);
+  --grad-bar: linear-gradient(90deg, #1d4ed8, #0891b2);
+}
+:root[data-theme="ocean"][data-mode="dark"] {
+  --page: #090d16;
+  --surface: #151a25;
+  --surface-2: #1c2331;
+  --line: #283143;
+  --ink: #e7edf7;
+  --ink-2: #a8b3c7;
+  --ink-3: #8591a6;
+  --c1: #4f86f0;
+  --c2: #d9772b;
+  --grad: linear-gradient(120deg, #0b0a2a 0%, #172554 40%, #1e40af 78%, #0e7490 100%);
+  --grad-bar: linear-gradient(90deg, #1e40af, #4f86f0);
+}
+
+/* Shared: lighter primary, status colors (up/down), and a heatmap ramp built from the theme color */
+:root {
+  --c1-soft: color-mix(in oklab, var(--c1) 45%, var(--surface));
+  --c1-faint: color-mix(in oklab, var(--c1) 12%, var(--surface));
+  --up: #15803d;
+  --down: #b91c1c;
+  --muted-line: color-mix(in oklab, var(--ink-3) 45%, var(--surface));
+}
+:root[data-mode="dark"] {
+  --up: #4ade80;
+  --down: #f87171;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.bg-grad {
+  background: var(--grad);
+}
+
+/* Keyboard focus outline that follows the theme color */
+:focus-visible {
+  outline: 2px solid var(--c1);
+  outline-offset: 2px;
+}
+
+/* Print: hide controls and don't split cards across pages */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+  section,
+  .kpi {
+    break-inside: avoid;
   }
 }

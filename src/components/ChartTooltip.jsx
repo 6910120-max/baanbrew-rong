@@ -1,26 +1,29 @@
 import { formatBaht } from '../lib/format'
 
-/** Shared tooltip: title on top, then one line per series (with a color swatch when there's more than one) */
-function ChartTooltip({ active, payload, title }) {
+/**
+ * Shared tooltip: title on top, then one line per series
+ * (with a color swatch when there's more than one series); value defaults to formatBaht
+ */
+function ChartTooltip({ active, payload, title, format = formatBaht, extra }) {
   if (!active || !payload?.length) return null
   const entries = payload.filter((p) => p.value != null)
   const showNames = entries.length > 1
+  const point = payload[0].payload
   return (
-    <div className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm shadow-md dark:border-stone-700 dark:bg-stone-800">
-      <p className="text-stone-500 dark:text-stone-400">{title(payload[0].payload)}</p>
+    <div className="rounded-xl border border-line bg-surface px-3 py-2 text-sm shadow-lg">
+      <p className="text-ink-3">{title(point)}</p>
       {entries.map((entry) => (
         <p key={entry.dataKey} className="flex items-center gap-2">
           {showNames && (
             <>
-              <span className="h-0.5 w-3 rounded" style={{ background: entry.color }} />
-              <span className="text-stone-600 dark:text-stone-300">{entry.name}</span>
+              <span className="h-2 w-2 rounded-full" style={{ background: entry.color }} />
+              <span className="text-ink-2">{entry.name}</span>
             </>
           )}
-          <span className="ml-auto pl-3 font-semibold tabular-nums text-stone-900 dark:text-stone-50">
-            {formatBaht(entry.value)}
-          </span>
+          <span className="ml-auto pl-3 font-semibold tabular-nums text-ink">{format(entry.value)}</span>
         </p>
       ))}
+      {extra && <p className="mt-0.5 text-xs text-ink-3">{extra(point)}</p>}
     </div>
   )
 }
