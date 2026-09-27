@@ -26,7 +26,6 @@ const dict = {
     mode: 'โหมด',
     modeLight: 'สว่าง',
     modeDark: 'มืด',
-    modeAuto: 'อัตโนมัติ',
     print: 'พิมพ์ / PDF',
 
     // Filters
@@ -150,7 +149,6 @@ const dict = {
     mode: 'Mode',
     modeLight: 'Light',
     modeDark: 'Dark',
-    modeAuto: 'Auto',
     print: 'Print / PDF',
 
     period: 'Period',

@@ -1,7 +1,7 @@
 import { useI18n } from '../lib/i18n'
 import { MODES, THEMES } from '../lib/useSettings'
 import CsvFileButton from './CsvFileButton'
-import { AutoIcon, CoffeeIcon, MoonIcon, PrintIcon, SunIcon } from './Icons'
+import { CoffeeIcon, MoonIcon, PrintIcon, SunIcon } from './Icons'
 
 // Swatch color for each theme (shown on the picker button)
 const SWATCH = {
@@ -10,8 +10,8 @@ const SWATCH = {
   ocean: 'linear-gradient(135deg, #1e3a8a, #0891b2)',
 }
 const THEME_LABEL = { green: 'themeGreen', coffee: 'themeCoffee', ocean: 'themeOcean' }
-const MODE_ICON = { light: SunIcon, dark: MoonIcon, auto: AutoIcon }
-const MODE_LABEL = { light: 'modeLight', dark: 'modeDark', auto: 'modeAuto' }
+const MODE_ICON = { light: SunIcon, dark: MoonIcon }
+const MODE_LABEL = { light: 'modeLight', dark: 'modeDark' }
 
 /** Frosted-glass button group on top of the gradient */
 function Segmented({ label, children }) {

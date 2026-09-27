@@ -94,12 +94,13 @@ export function filterRows(rows, { from, to, branch = 'all', channel = 'all' }) 
 
 /**
  * Comparison period = the same number of days immediately before the selected range,
- * e.g. 1–30 Sep -> compare against 2–31 Aug. Returns null if there's no data that far back.
+ * e.g. 1–30 Sep -> compare against 2–31 Aug.
+ * Returns null if the data doesn't cover the whole previous period (a partial previous period would inflate the % change)
  */
 export function previousPeriod({ from, to }, minDate) {
   const length = daysBetween(from, to) + 1
   const prev = { from: addDays(from, -length), to: addDays(from, -1) }
-  return prev.to < minDate ? null : prev
+  return prev.from < minDate ? null : prev
 }
 
 /** Percent change from prev to current (null if prev is 0 or missing) */

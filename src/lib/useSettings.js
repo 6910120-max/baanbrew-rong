@@ -1,16 +1,27 @@
 import { useEffect, useState } from 'react'
 
 const STORAGE_KEY = 'baanbrew-settings'
-const DEFAULTS = { lang: 'th', theme: 'green', mode: 'auto' }
 
 export const THEMES = ['green', 'coffee', 'ocean']
-export const MODES = ['light', 'dark', 'auto']
+export const MODES = ['light', 'dark']
+
+/** First visit (nothing saved yet): start from the device's setting, after that use whatever the user picks */
+function systemMode() {
+  try {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  } catch {
+    return 'light'
+  }
+}
 
 function readSaved() {
+  const defaults = { lang: 'th', theme: 'green', mode: systemMode() }
   try {
-    return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') }
+    const saved = { ...defaults, ...JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') }
+    if (!MODES.includes(saved.mode)) saved.mode = defaults.mode // e.g. the old 'auto' value
+    return saved
   } catch {
-    return DEFAULTS
+    return defaults
   }
 }
 
@@ -30,16 +41,7 @@ export function useSettings() {
     const root = document.documentElement
     root.lang = settings.lang
     root.dataset.theme = settings.theme
-
-    // auto = follow the system setting and keep tracking when it changes
-    const media = window.matchMedia('(prefers-color-scheme: dark)')
-    const apply = () => {
-      root.dataset.mode = settings.mode === 'auto' ? (media.matches ? 'dark' : 'light') : settings.mode
-    }
-    apply()
-    if (settings.mode !== 'auto') return
-    media.addEventListener('change', apply)
-    return () => media.removeEventListener('change', apply)
+    root.dataset.mode = settings.mode
   }, [settings])
 
   const update = (patch) => setSettings((s) => ({ ...s, ...patch }))
