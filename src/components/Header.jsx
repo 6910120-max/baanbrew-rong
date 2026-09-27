@@ -39,7 +39,7 @@ function SegButton({ active, label, onClick, children, className = '' }) {
 }
 
 /** Header with a gradient background: title + data range + controls (language, theme, mode, file, print) */
-function Header({ settings, onChange, subtitle, onFile, showFileButton }) {
+function Header({ settings, onChange, subtitle, stats = [], onFile, showFileButton }) {
   const { t } = useI18n()
 
   return (
@@ -56,6 +56,15 @@ function Header({ settings, onChange, subtitle, onFile, showFileButton }) {
           <div>
             <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{t('appTitle')}</h1>
             <p className="text-sm text-white/80">{subtitle ?? t('appSubtitle')}</p>
+            {stats.length > 0 && (
+              <ul className="mt-2 flex flex-wrap gap-1.5">
+                {stats.map((s) => (
+                  <li key={s.label} className="rounded-full bg-white/15 px-2.5 py-0.5 text-xs text-white ring-1 ring-white/20">
+                    <span className="font-semibold tabular-nums">{s.value}</span> {s.label}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
 

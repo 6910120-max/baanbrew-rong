@@ -134,6 +134,19 @@ export function countUniqueMembers(rows) {
   return members.size
 }
 
+/**
+ * Overall data summary (shown in the header next to the date):
+ *   branchCount = distinct branches, productCount = distinct products (product_id),
+ *   itemsSold = total quantity sold (sum of qty, not row count)
+ */
+export function dataSummary(rows) {
+  return {
+    branchCount: new Set(rows.map((r) => r.branch)).size,
+    productCount: new Set(rows.map((r) => r.product)).size,
+    itemsSold: rows.reduce((sum, r) => sum + r.qty, 0),
+  }
+}
+
 /** The 4 main KPIs together */
 export function computeKpis(rows) {
   return {
@@ -429,6 +442,7 @@ export function computeDashboard(rows, filters, minDate) {
 
   return {
     rowCount: current.length,
+    summary: dataSummary(current),
     kpis: computeKpis(current),
     prevKpis: previous ? computeKpis(previous) : null,
     prevRange,

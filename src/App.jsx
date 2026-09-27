@@ -114,6 +114,15 @@ function Dashboard({ settings, onSettingsChange }) {
         settings={settings}
         onChange={onSettingsChange}
         subtitle={subtitle}
+        stats={
+          dash
+            ? [
+                { value: formatNumber(dash.summary.branchCount), label: t('statBranches') },
+                { value: formatNumber(dash.summary.productCount), label: t('statProducts') },
+                { value: formatNumber(dash.summary.itemsSold), label: t('statItemsSold') },
+              ]
+            : []
+        }
         onFile={handleFile}
         showFileButton={status === 'ready'}
       />
