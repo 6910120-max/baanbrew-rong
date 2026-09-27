@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+/* Chart colors (validated for colorblind safety and contrast against the surface) */
+:root {
+  --chart-1: #b45309;
+  --chart-muted: #c7c2bd;
+  --chart-surface: #ffffff;
+  --chart-grid: #e7e5e4;
+  --chart-axis: #78716c;
+  --chart-label: #44403c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --chart-1: #c2701f;
+    --chart-muted: #57534e;
+    --chart-surface: #1c1917;
+    --chart-grid: #292524;
+    --chart-axis: #a8a29e;
+    --chart-label: #d6d3d1;
+  }
+}
