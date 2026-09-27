@@ -288,7 +288,23 @@ export function weekdayHourMatrix(rows) {
   const cells = Array.from({ length: 7 }, () => hours.map(() => 0))
   for (const row of rows) cells[row.weekday][index.get(row.hour)] += row.amount
   const max = Math.max(0, ...cells.flat())
-  return { hours, cells, max }
+  return { hours, cells, max, thresholds: levelThresholds(cells.flat(), 5) }
+}
+
+/**
+ * Split values into `levels` equal-sized groups (quantiles), e.g. 5 levels -> 20% of cells per level
+ * Returns the (levels − 1) cut points: sort the values, take the value at the 20%, 40%, 60%, 80% positions
+ * This spreads colors evenly across the grid, instead of scaling from 0 where every cell ends up mid-tone
+ */
+export function levelThresholds(values, levels = 5) {
+  const sorted = [...values].sort((a, b) => a - b)
+  return Array.from({ length: levels - 1 }, (_, i) => sorted[Math.floor(((i + 1) * sorted.length) / levels)])
+}
+
+/** Which level a value falls in (0 = lowest … thresholds.length = highest) */
+export function levelOf(value, thresholds) {
+  if (value <= 0) return 0 // no sales always sits at the lowest level (even when lots of cells are 0)
+  return thresholds.filter((t) => value >= t).length
 }
 
 // ---------- Customers ----------

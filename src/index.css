@@ -114,11 +114,22 @@
   --up: #15803d;
   --down: #b91c1c;
   --muted-line: color-mix(in oklab, var(--ink-3) 45%, var(--surface));
+  /* Heatmap 5 levels: share of theme color mixed into the surface (dark mode gets its own steps so levels separate evenly) */
+  --heat-0: color-mix(in oklab, var(--c1) 14%, var(--surface));
+  --heat-1: color-mix(in oklab, var(--c1) 34%, var(--surface));
+  --heat-2: color-mix(in oklab, var(--c1) 54%, var(--surface));
+  --heat-3: color-mix(in oklab, var(--c1) 76%, var(--surface));
+  --heat-4: var(--c1);
 }
 :root[data-mode="dark"] {
   --up: #4ade80;
   --down: #f87171;
   color-scheme: dark;
+  --heat-0: color-mix(in oklab, var(--c1) 18%, var(--surface));
+  --heat-1: color-mix(in oklab, var(--c1) 42%, var(--surface));
+  --heat-2: color-mix(in oklab, var(--c1) 64%, var(--surface));
+  --heat-3: color-mix(in oklab, var(--c1) 84%, var(--surface));
+  --heat-4: color-mix(in oklab, var(--c1) 88%, white);
 }
 
 body {

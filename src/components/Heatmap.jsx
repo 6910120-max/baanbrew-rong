@@ -1,22 +1,31 @@
 import { useState } from 'react'
-import { formatBaht } from '../lib/format'
+import { formatBaht, formatBahtCompact } from '../lib/format'
 import { useI18n } from '../lib/i18n'
+import { levelOf } from '../lib/metrics'
+
+// 5 color steps (defined in index.css as --heat-0 … --heat-4, low → high)
+const levelColor = (level) => `var(--heat-${level})`
 
 /**
- * Weekday × hour heatmap (plain HTML grid): one theme hue, light → dark by sales (sequential)
- * Hover or tap a cell to show the value in the line below
+ * Weekday × hour heatmap (plain HTML grid) with 5 stepped levels (quantiles: about 20% of cells per level)
+ * so each level reads clearly instead of a continuous gradient that's hard to tell apart
+ * Hover or tap a cell to show the value and level in the line below
  */
 function Heatmap({ matrix }) {
   const { t } = useI18n()
   const days = t('weekdays')
+  const levelNames = t('heatLevels')
   const [active, setActive] = useState(null)
-  const { hours, cells, max } = matrix
+  const { hours, cells, thresholds } = matrix
 
-  // Color strength: linear 6%–100% of the theme color mixed with the surface color (more sales = more intense)
-  const shade = (v) => {
-    const ratio = max ? v / max : 0
-    return `color-mix(in oklab, var(--c1) ${Math.round(6 + ratio * 94)}%, var(--surface))`
-  }
+  // Value range for each level, for the legend, e.g. "< ฿33k", "฿33k–43k", "≥ ฿60k"
+  const ranges = levelNames.map((_, i) => {
+    if (i === 0) return `< ${formatBahtCompact(thresholds[0])}`
+    if (i === thresholds.length) return `≥ ${formatBahtCompact(thresholds[i - 1])}`
+    return `${formatBahtCompact(thresholds[i - 1])}–${formatBahtCompact(thresholds[i]).slice(1)}`
+  })
+
+  const activeValue = active ? cells[active.di][active.hi] : null
 
   return (
     <div>
@@ -36,19 +45,20 @@ function Heatmap({ matrix }) {
             <span className="flex items-center">{day}</span>
             {hours.map((h, hi) => {
               const v = cells[di][hi]
+              const level = levelOf(v, thresholds)
               const isActive = active?.di === di && active?.hi === hi
               return (
                 <button
                   key={h}
                   type="button"
-                  aria-label={`${day} ${h}:00 ${formatBaht(v)}`}
+                  aria-label={`${day} ${h}:00 ${formatBaht(v)} (${levelNames[level]})`}
                   onMouseEnter={() => setActive({ di, hi })}
                   onFocus={() => setActive({ di, hi })}
                   onClick={() => setActive({ di, hi })}
                   className={`aspect-square min-h-4 rounded-[4px] transition-transform ${
                     isActive ? 'scale-110 ring-2 ring-ink' : ''
                   }`}
-                  style={{ background: shade(v) }}
+                  style={{ background: levelColor(level) }}
                 />
               )
             })}
@@ -56,26 +66,28 @@ function Heatmap({ matrix }) {
         ))}
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
-        <p className="min-h-5 text-ink-2" aria-live="polite">
-          {active ? (
-            <>
-              {days[active.di]} {String(hours[active.hi]).padStart(2, '0')}:00 ·{' '}
-              <span className="font-semibold tabular-nums text-ink">{formatBaht(cells[active.di][active.hi])}</span>
-            </>
-          ) : (
-            <span className="text-ink-3">{t('heatmapHint')}</span>
-          )}
-        </p>
-        <div className="flex items-center gap-1.5 text-ink-3">
-          ฿0
-          <span
-            className="h-2 w-20 rounded-full"
-            style={{ background: `linear-gradient(90deg, ${shade(0)}, ${shade(max)})` }}
-          />
-          {formatBaht(max)}
-        </div>
-      </div>
+      {/* Legend: 5 levels with a name and value range for each */}
+      <ul className="mt-4 grid grid-cols-5 gap-1.5 text-[11px]">
+        {levelNames.map((name, i) => (
+          <li key={name} className="min-w-0">
+            <span className="block h-2.5 rounded-sm" style={{ background: levelColor(i) }} />
+            <span className="mt-1 block truncate font-medium text-ink-2">{name}</span>
+            <span className="block truncate tabular-nums text-ink-3">{ranges[i]}</span>
+          </li>
+        ))}
+      </ul>
+
+      <p className="mt-3 min-h-5 text-xs text-ink-2" aria-live="polite">
+        {active ? (
+          <>
+            {days[active.di]} {String(hours[active.hi]).padStart(2, '0')}:00 ·{' '}
+            <span className="font-semibold tabular-nums text-ink">{formatBaht(activeValue)}</span>
+            <span className="text-ink-3"> · {levelNames[levelOf(activeValue, thresholds)]}</span>
+          </>
+        ) : (
+          <span className="text-ink-3">{t('heatmapHint')}</span>
+        )}
+      </p>
     </div>
   )
 }
