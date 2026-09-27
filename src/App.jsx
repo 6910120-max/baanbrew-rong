@@ -118,7 +118,7 @@ function Dashboard({ settings, onSettingsChange }) {
           dash
             ? [
                 { value: formatNumber(dash.summary.branchCount), label: t('statBranches') },
-                { value: formatNumber(dash.summary.productCount), label: t('statProducts') },
+                { value: formatNumber(dash.summary.rowCount), label: t('statRows') },
                 { value: formatNumber(dash.summary.itemsSold), label: t('statItemsSold') },
               ]
             : []

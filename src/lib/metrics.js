@@ -136,13 +136,13 @@ export function countUniqueMembers(rows) {
 
 /**
  * Overall data summary (shown in the header next to the date):
- *   branchCount = distinct branches, productCount = distinct products (product_id),
+ *   branchCount = distinct branches, rowCount = data rows (1 row = 1 line item in a bill),
  *   itemsSold = total quantity sold (sum of qty, not row count)
  */
 export function dataSummary(rows) {
   return {
     branchCount: new Set(rows.map((r) => r.branch)).size,
-    productCount: new Set(rows.map((r) => r.product)).size,
+    rowCount: rows.length,
     itemsSold: rows.reduce((sum, r) => sum + r.qty, 0),
   }
 }
