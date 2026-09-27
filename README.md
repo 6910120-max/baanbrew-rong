@@ -1,4 +1,4 @@
-# บ้านบรู Dashboard
+# บ้านบรู - รงค์ (Baanbrew-Rong)
 
 Dashboard ยอดขายร้านบ้านบรู สร้างด้วย React + Vite, Tailwind CSS v4, Recharts และ PapaParse
 

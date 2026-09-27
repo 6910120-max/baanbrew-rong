@@ -3,7 +3,7 @@ import { getDateFormatters } from './format'
 
 const dict = {
   th: {
-    appTitle: 'บ้านบรู Dashboard',
+    appTitle: 'บ้านบรู - รงค์',
     appSubtitle: 'ภาพรวมยอดขายทุกสาขา',
     dataRange: 'ข้อมูลวันที่ {from} – {to}',
     loading: 'กำลังโหลดข้อมูล…',
@@ -128,7 +128,7 @@ const dict = {
     weekdays: ['จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.', 'อา.'],
   },
   en: {
-    appTitle: 'Baanbrew Dashboard',
+    appTitle: 'Baanbrew-Rong',
     appSubtitle: 'Sales overview across all branches',
     dataRange: 'Data from {from} – {to}',
     loading: 'Loading data…',
