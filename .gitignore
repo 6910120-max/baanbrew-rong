@@ -23,9 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
-# Sales data (real customer data; don't push to GitHub)
-sales.csv
-*.csv
+# Duplicate data file at the project root (the one in use is public/sales.csv)
+/sales.csv
 
 # Claude Code local settings
 .claude/
