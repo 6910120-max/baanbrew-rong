@@ -1,0 +1,40 @@
+import Papa from 'papaparse'
+
+// Columns metrics.js needs
+const REQUIRED_COLUMNS = ['order_id', 'datetime', 'branch', 'qty', 'unit_price', 'customer_id']
+
+/** Error when the data file can't be found (Vercel returns 404, Vite dev returns index.html instead) */
+export class SalesFileMissingError extends Error {
+  constructor() {
+    super('ไม่พบไฟล์ข้อมูล sales.csv')
+    this.name = 'SalesFileMissingError'
+  }
+}
+
+/** Convert CSV text into an array of rows and check the required columns are all present */
+export function parseSalesCsv(text) {
+  const result = Papa.parse(text, {
+    header: true,
+    skipEmptyLines: true,
+    transformHeader: (h) => h.trim(), // trim() also strips the BOM (U+FEFF) Excel adds to the first column name
+  })
+  const fields = result.meta.fields ?? []
+  const missing = REQUIRED_COLUMNS.filter((col) => !fields.includes(col))
+  if (missing.length > 0) {
+    throw new Error(`ไฟล์ไม่ถูกรูปแบบ ขาดคอลัมน์: ${missing.join(', ')}`)
+  }
+  return result.data
+}
+
+/** Load the CSV from a URL on the server (e.g. /sales.csv) */
+export async function loadSalesFromUrl(url) {
+  const res = await fetch(url)
+  const isHtml = res.headers.get('content-type')?.includes('text/html')
+  if (!res.ok || isHtml) throw new SalesFileMissingError()
+  return parseSalesCsv(await res.text())
+}
+
+/** Load the CSV from a file the user picks (read in the browser only, never uploaded) */
+export async function loadSalesFromFile(file) {
+  return parseSalesCsv(await file.text())
+}
