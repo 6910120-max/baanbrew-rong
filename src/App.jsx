@@ -14,6 +14,7 @@ import ShareBars from './components/ShareBars'
 import MemberCompare from './components/MemberCompare'
 import RfmSegments from './components/RfmSegments'
 import CustomerSection from './components/CustomerSection'
+import TabBar from './components/TabBar'
 import {
   addDays,
   branchNameMap,
@@ -32,6 +33,7 @@ import { loadOptionalCsv, loadSalesFromFile, loadSalesFromUrl, MissingColumnsErr
 import { formatBaht, formatNumber, formatPercent } from './lib/format'
 import { I18nProvider, useI18n } from './lib/i18n'
 import { useSettings } from './lib/useSettings'
+import { useTab } from './lib/useTab'
 
 /** Turn a preset into from/to dates (counting back from the last day in the data) */
 function resolveRange(filters, bounds) {
@@ -60,6 +62,7 @@ function Dashboard({ settings, onSettingsChange }) {
   }, [t])
   // status: 'loading' | 'missing' (no file on the server) | 'error' | 'ready'
   const [state, setState] = useState({ status: 'loading' })
+  const [tab, setTab] = useTab()
   const [filters, setFilters] = useState({ preset: 'all', from: '', to: '', branch: 'all', channel: 'all' })
 
   const showRows = (raw) => {
@@ -182,8 +185,10 @@ function Dashboard({ settings, onSettingsChange }) {
             />
             {dash && dash.rowCount > 0 ? (
               <>
-                <DashboardBody dash={dash} />
-                {custDash && <CustomerSection data={custDash} />}
+                <TabBar tab={tab} onChange={setTab} />
+                <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="space-y-4 sm:space-y-6">
+                  <DashboardBody dash={dash} custDash={custDash} tab={tab} />
+                </div>
               </>
             ) : (
               <div className="rounded-2xl border border-line bg-surface p-6 text-ink-2">{t('noRows')}</div>
@@ -195,7 +200,13 @@ function Dashboard({ settings, onSettingsChange }) {
   )
 }
 
-function DashboardBody({ dash }) {
+/**
+ * Dashboard content split into 3 tabs (same data and filters, only the layout changes)
+ *   overview  : sales KPIs, daily, monthly + forecast, by branch
+ *   products  : top products, by hour, day × hour, channels/payments, bought together
+ *   customers : member section (customers.csv) + members vs walk-ins + RFM segments
+ */
+function DashboardBody({ dash, custDash, tab }) {
   const { t, tv, d } = useI18n()
   const { kpis, prevKpis, prevRange } = dash
   const delta = (key) => (prevKpis ? percentChange(kpis[key], prevKpis[key]) : null)
@@ -204,6 +215,179 @@ function DashboardBody({ dash }) {
   const salesCol = { key: 'sales', label: t('colSales'), format: (v) => formatBaht(v), csv: (r) => Math.round(r.sales) }
   const shareCol = { key: 'share', label: t('colShare'), format: (v) => formatPercent(v), csv: (r) => r.share.toFixed(2) }
   const ordersCol = { key: 'orders', label: t('colOrders'), format: (v) => formatNumber(v) }
+
+  if (tab === 'products') {
+    return (
+      <>
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+          <ChartCard
+            title={t('productsTitle')}
+            subtitle={t('productsSub')}
+            filename="top-products"
+            footer={t('productCodeNote')}
+            table={{
+              columns: [
+                { key: 'key', label: t('colProduct'), align: 'left' },
+                salesCol,
+                { key: 'qty', label: t('colQty'), format: (v) => formatNumber(v) },
+                shareCol,
+              ],
+              rows: dash.topProducts,
+            }}
+          >
+            <HBarChart
+              data={dash.topProducts}
+              categoryKey="key"
+              categoryWidth={52}
+              rowHeight={32}
+              barSize={18}
+              tooltipExtra={(p) => `${formatNumber(p.qty)} ${t('colQty')} · ${formatPercent(p.share)}`}
+            />
+          </ChartCard>
+  
+          <ChartCard
+            title={t('hourTitle')}
+            subtitle={t('hourSub')}
+            filename="sales-by-hour"
+            table={{
+              columns: [
+                { key: 'hour', label: t('colHour'), align: 'left', format: (v) => `${String(v).padStart(2, '0')}:00`, csv: (r) => `${String(r.hour).padStart(2, '0')}:00` },
+                salesCol,
+                ordersCol,
+              ],
+              rows: dash.byHour,
+            }}
+          >
+            <HourlyChart data={dash.byHour} />
+          </ChartCard>
+  
+          <ChartCard
+            title={t('heatmapTitle')}
+            subtitle={t('heatmapSub')}
+            filename="weekday-hour"
+            table={{
+              columns: [
+                { key: 'day', label: t('colDay'), align: 'left' },
+                ...dash.heatmap.hours.map((h, i) => ({
+                  key: `h${h}`,
+                  label: `${h}:00`,
+                  format: (_, row) => formatNumber(row.values[i]),
+                  csv: (row) => Math.round(row.values[i]),
+                })),
+              ],
+              rows: t('weekdays').map((day, i) => ({ day, values: dash.heatmap.cells[i] })),
+            }}
+          >
+            <Heatmap matrix={dash.heatmap} />
+          </ChartCard>
+  
+          <ChartCard
+            title={t('shareTitle')}
+            subtitle={t('shareSub')}
+            filename="channel-payment"
+            table={{
+              columns: [
+                { key: 'group', label: t('colType'), align: 'left' },
+                { key: 'key', label: t('colGroup'), align: 'left', format: tv, csv: (r) => tv(r.key) },
+                salesCol,
+                ordersCol,
+                shareCol,
+              ],
+              rows: [
+                ...dash.byChannel.map((r) => ({ ...r, group: t('channelLabel') })),
+                ...dash.byPayment.map((r) => ({ ...r, group: t('paymentLabel') })),
+              ],
+            }}
+          >
+            <div className="grid gap-6 sm:grid-cols-2">
+              <ShareBars title={t('channelLabel')} data={dash.byChannel} formatKey={tv} />
+              <ShareBars title={t('paymentLabel')} data={dash.byPayment} formatKey={tv} />
+            </div>
+          </ChartCard>
+        </div>
+
+        <ChartCard
+          title={t('basketTitle')}
+          subtitle={t('basketSub', { count: formatNumber(dash.basket.multiItemOrders) })}
+          filename="bought-together"
+          footer={t('productCodeNote')}
+          table={{
+            columns: [
+              { key: 'pair', label: t('colPair'), align: 'left' },
+              { key: 'count', label: t('colBills'), format: (v) => formatNumber(v) },
+              shareCol,
+            ],
+            rows: dash.basket.pairs,
+          }}
+        >
+          <HBarChart
+            data={dash.basket.pairs}
+            categoryKey="pair"
+            valueKey="count"
+            categoryWidth={104}
+            narrowCategoryWidth={96}
+            rowHeight={32}
+            barSize={18}
+            formatValue={(v) => t('bills', { count: formatNumber(v) })}
+            formatValueShort={(v) => formatNumber(v)}
+            tooltipExtra={(p) => formatPercent(p.share, 2)}
+          />
+        </ChartCard>
+      </>
+    )
+  }
+
+  // The two sales-based member cards (members vs walk-ins, RFM) belong with the other customer charts
+  const memberCards = (
+    <>
+      <ChartCard
+        title={t('membersTitle')}
+        subtitle={t('membersSub')}
+        filename="members-vs-walkins"
+        table={{
+          columns: [
+            { key: 'label', label: t('colType'), align: 'left' },
+            salesCol,
+            ordersCol,
+            { key: 'aov', label: t('colAov'), format: (v) => formatBaht(v, 2), csv: (r) => r.aov.toFixed(2) },
+            shareCol,
+          ],
+          rows: [
+            { label: t('member'), ...dash.members.member },
+            { label: t('walkIn'), ...dash.members.walkIn },
+          ],
+        }}
+      >
+        <MemberCompare data={dash.members} />
+      </ChartCard>
+
+      <ChartCard
+        title={t('rfmTitle')}
+        subtitle={t('rfmSub', { bills: RFM_FREQUENT_BILLS, days: RFM_ACTIVE_DAYS })}
+        filename="rfm-segments"
+        table={{
+          columns: [
+            { key: 'key', label: t('colGroup'), align: 'left', format: (v) => t(`rfm_${v}`), csv: (r) => t(`rfm_${r.key}`) },
+            { key: 'count', label: t('colMembers'), format: (v) => formatNumber(v) },
+            shareCol,
+            salesCol,
+            { key: 'avgSpend', label: t('colAvgSpend'), format: (v) => formatBaht(v), csv: (r) => Math.round(r.avgSpend) },
+          ],
+          rows: dash.rfm,
+        }}
+      >
+        <RfmSegments segments={dash.rfm} />
+      </ChartCard>
+    </>
+  )
+
+  if (tab === 'customers') {
+    return custDash ? (
+      <CustomerSection data={custDash}>{memberCards}</CustomerSection>
+    ) : (
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">{memberCards}</div>
+    )
+  }
 
   return (
     <>
@@ -221,20 +405,20 @@ function DashboardBody({ dash }) {
       )}
 
       <ChartCard
-        title={t('dailyTitle')}
-        subtitle={t('dailySub')}
-        filename="daily-sales"
-        table={{
-          columns: [
-            { key: 'date', label: t('colDate'), align: 'left', format: (v) => d.shortDate(v) },
-            salesCol,
-            { key: 'avg', label: t('colAvg7'), format: (v) => (v == null ? '–' : formatBaht(v)), csv: (r) => (r.avg == null ? '' : Math.round(r.avg)) },
-          ],
-          rows: dash.daily,
-        }}
-      >
-        <DailySalesChart data={dash.daily} />
-      </ChartCard>
+          title={t('dailyTitle')}
+          subtitle={t('dailySub')}
+          filename="daily-sales"
+          table={{
+            columns: [
+              { key: 'date', label: t('colDate'), align: 'left', format: (v) => d.shortDate(v) },
+              salesCol,
+              { key: 'avg', label: t('colAvg7'), format: (v) => (v == null ? '–' : formatBaht(v)), csv: (r) => (r.avg == null ? '' : Math.round(r.avg)) },
+            ],
+            rows: dash.daily,
+          }}
+        >
+          <DailySalesChart data={dash.daily} />
+        </ChartCard>
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
         <ChartCard
@@ -276,159 +460,7 @@ function DashboardBody({ dash }) {
             barSize={26}
           />
         </ChartCard>
-
-        <ChartCard
-          title={t('productsTitle')}
-          subtitle={t('productsSub')}
-          filename="top-products"
-          footer={t('productCodeNote')}
-          table={{
-            columns: [
-              { key: 'key', label: t('colProduct'), align: 'left' },
-              salesCol,
-              { key: 'qty', label: t('colQty'), format: (v) => formatNumber(v) },
-              shareCol,
-            ],
-            rows: dash.topProducts,
-          }}
-        >
-          <HBarChart
-            data={dash.topProducts}
-            categoryKey="key"
-            categoryWidth={52}
-            rowHeight={32}
-            barSize={18}
-            tooltipExtra={(p) => `${formatNumber(p.qty)} ${t('colQty')} · ${formatPercent(p.share)}`}
-          />
-        </ChartCard>
-
-        <ChartCard
-          title={t('hourTitle')}
-          subtitle={t('hourSub')}
-          filename="sales-by-hour"
-          table={{
-            columns: [
-              { key: 'hour', label: t('colHour'), align: 'left', format: (v) => `${String(v).padStart(2, '0')}:00`, csv: (r) => `${String(r.hour).padStart(2, '0')}:00` },
-              salesCol,
-              ordersCol,
-            ],
-            rows: dash.byHour,
-          }}
-        >
-          <HourlyChart data={dash.byHour} />
-        </ChartCard>
-
-        <ChartCard
-          title={t('heatmapTitle')}
-          subtitle={t('heatmapSub')}
-          filename="weekday-hour"
-          table={{
-            columns: [
-              { key: 'day', label: t('colDay'), align: 'left' },
-              ...dash.heatmap.hours.map((h, i) => ({
-                key: `h${h}`,
-                label: `${h}:00`,
-                format: (_, row) => formatNumber(row.values[i]),
-                csv: (row) => Math.round(row.values[i]),
-              })),
-            ],
-            rows: t('weekdays').map((day, i) => ({ day, values: dash.heatmap.cells[i] })),
-          }}
-        >
-          <Heatmap matrix={dash.heatmap} />
-        </ChartCard>
-
-        <ChartCard
-          title={t('shareTitle')}
-          subtitle={t('shareSub')}
-          filename="channel-payment"
-          table={{
-            columns: [
-              { key: 'group', label: t('colType'), align: 'left' },
-              { key: 'key', label: t('colGroup'), align: 'left', format: tv, csv: (r) => tv(r.key) },
-              salesCol,
-              ordersCol,
-              shareCol,
-            ],
-            rows: [
-              ...dash.byChannel.map((r) => ({ ...r, group: t('channelLabel') })),
-              ...dash.byPayment.map((r) => ({ ...r, group: t('paymentLabel') })),
-            ],
-          }}
-        >
-          <div className="grid gap-6 sm:grid-cols-2">
-            <ShareBars title={t('channelLabel')} data={dash.byChannel} formatKey={tv} />
-            <ShareBars title={t('paymentLabel')} data={dash.byPayment} formatKey={tv} />
-          </div>
-        </ChartCard>
-
-        <ChartCard
-          title={t('membersTitle')}
-          subtitle={t('membersSub')}
-          filename="members-vs-walkins"
-          table={{
-            columns: [
-              { key: 'label', label: t('colType'), align: 'left' },
-              salesCol,
-              ordersCol,
-              { key: 'aov', label: t('colAov'), format: (v) => formatBaht(v, 2), csv: (r) => r.aov.toFixed(2) },
-              shareCol,
-            ],
-            rows: [
-              { label: t('member'), ...dash.members.member },
-              { label: t('walkIn'), ...dash.members.walkIn },
-            ],
-          }}
-        >
-          <MemberCompare data={dash.members} />
-        </ChartCard>
-
-        <ChartCard
-          title={t('rfmTitle')}
-          subtitle={t('rfmSub', { bills: RFM_FREQUENT_BILLS, days: RFM_ACTIVE_DAYS })}
-          filename="rfm-segments"
-          table={{
-            columns: [
-              { key: 'key', label: t('colGroup'), align: 'left', format: (v) => t(`rfm_${v}`), csv: (r) => t(`rfm_${r.key}`) },
-              { key: 'count', label: t('colMembers'), format: (v) => formatNumber(v) },
-              shareCol,
-              salesCol,
-              { key: 'avgSpend', label: t('colAvgSpend'), format: (v) => formatBaht(v), csv: (r) => Math.round(r.avgSpend) },
-            ],
-            rows: dash.rfm,
-          }}
-        >
-          <RfmSegments segments={dash.rfm} />
-        </ChartCard>
       </div>
-
-      <ChartCard
-        title={t('basketTitle')}
-        subtitle={t('basketSub', { count: formatNumber(dash.basket.multiItemOrders) })}
-        filename="bought-together"
-        footer={t('productCodeNote')}
-        table={{
-          columns: [
-            { key: 'pair', label: t('colPair'), align: 'left' },
-            { key: 'count', label: t('colBills'), format: (v) => formatNumber(v) },
-            shareCol,
-          ],
-          rows: dash.basket.pairs,
-        }}
-      >
-        <HBarChart
-          data={dash.basket.pairs}
-          categoryKey="pair"
-          valueKey="count"
-          categoryWidth={104}
-          narrowCategoryWidth={96}
-          rowHeight={32}
-          barSize={18}
-          formatValue={(v) => t('bills', { count: formatNumber(v) })}
-          formatValueShort={(v) => formatNumber(v)}
-          tooltipExtra={(p) => formatPercent(p.share, 2)}
-        />
-      </ChartCard>
     </>
   )
 }

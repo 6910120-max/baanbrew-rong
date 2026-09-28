@@ -9,8 +9,9 @@ import NewMembersChart from './NewMembersChart'
 /**
  * Member-customer section (from customers.csv joined with sales)
  * data = output of customerDashboard() in metrics.js, recalculated from the filters on the page
+ * children = extra cards appended to the same grid (e.g. members vs walk-ins, RFM)
  */
-function CustomerSection({ data }) {
+function CustomerSection({ data, children }) {
   const { t, tv, d } = useI18n()
   const { kpis } = data
   const neverShare = kpis.total ? (kpis.neverBought / kpis.total) * 100 : 0
@@ -18,7 +19,7 @@ function CustomerSection({ data }) {
 
   return (
     <section aria-labelledby="customers-heading" className="space-y-4 sm:space-y-6">
-      <div className="pt-4">
+      <div>
         <h2 id="customers-heading" className="text-xl font-bold text-ink">{t('custTitle')}</h2>
         <p className="text-sm text-ink-3">{t('custSub')}</p>
       </div>
@@ -120,6 +121,8 @@ function CustomerSection({ data }) {
             tooltipExtra={(p) => t('custHomeTip', { bought: formatPercent(p.buyerShare), home: formatPercent(p.atHomeShare) })}
           />
         </ChartCard>
+
+        {children}
       </div>
     </section>
   )

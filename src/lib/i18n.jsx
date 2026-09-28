@@ -30,6 +30,13 @@ const dict = {
     modeLight: 'สว่าง',
     modeDark: 'มืด',
     print: 'พิมพ์ / PDF',
+    tabsLabel: 'หมวดข้อมูล',
+    tab_overview: 'ภาพรวม',
+    tab_products: 'สินค้า & เวลา',
+    tab_customers: 'ลูกค้า',
+    tab_overview_short: 'ภาพรวม',
+    tab_products_short: 'สินค้า & เวลา',
+    tab_customers_short: 'ลูกค้า',
 
     // Filters
     period: 'ช่วงเวลา',
@@ -184,6 +191,13 @@ const dict = {
     modeLight: 'Light',
     modeDark: 'Dark',
     print: 'Print / PDF',
+    tabsLabel: 'Sections',
+    tab_overview: 'Overview',
+    tab_products: 'Products & time',
+    tab_customers: 'Customers',
+    tab_overview_short: 'Overview',
+    tab_products_short: 'Products',
+    tab_customers_short: 'Customers',
 
     period: 'Period',
     presetAll: 'All',
