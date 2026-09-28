@@ -13,17 +13,22 @@ import Heatmap from './components/Heatmap'
 import ShareBars from './components/ShareBars'
 import MemberCompare from './components/MemberCompare'
 import RfmSegments from './components/RfmSegments'
+import CustomerSection from './components/CustomerSection'
 import {
   addDays,
+  branchNameMap,
   computeDashboard,
+  customerDashboard,
   dataBounds,
   distinctValues,
+  filterRows,
   percentChange,
+  prepareCustomers,
   prepareRows,
   RFM_ACTIVE_DAYS,
   RFM_FREQUENT_BILLS,
 } from './lib/metrics'
-import { loadSalesFromFile, loadSalesFromUrl, MissingColumnsError, SalesFileMissingError } from './lib/loadSales'
+import { loadOptionalCsv, loadSalesFromFile, loadSalesFromUrl, MissingColumnsError, SalesFileMissingError } from './lib/loadSales'
 import { formatBaht, formatNumber, formatPercent } from './lib/format'
 import { I18nProvider, useI18n } from './lib/i18n'
 import { useSettings } from './lib/useSettings'
@@ -80,6 +85,17 @@ function Dashboard({ settings, onSettingsChange }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Member customers (optional): if customers.csv is missing, the customer section just doesn't show
+  const [customers, setCustomers] = useState(null)
+  useEffect(() => {
+    Promise.all([
+      loadOptionalCsv('/customers.csv', ['customer_id', 'gender', 'age_group', 'home_branch_id', 'joined_date']),
+      loadOptionalCsv('/branches.csv', ['branch_id', 'branch']),
+    ]).then(([rawCustomers, rawBranches]) => {
+      if (rawCustomers) setCustomers(prepareCustomers(rawCustomers, branchNameMap(rawBranches)))
+    })
+  }, [])
+
   const handleFile = (file) => {
     setState({ status: 'loading' })
     loadSalesFromFile(file).then(showRows, showError)
@@ -97,6 +113,12 @@ function Dashboard({ settings, onSettingsChange }) {
       bounds.min,
     )
   }, [status, rows, bounds, range?.from, range?.to, filters.branch, filters.channel, filters.preset]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const custDash = useMemo(() => {
+    if (!dash || !customers) return null
+    const f = { ...range, branch: filters.branch, channel: filters.channel }
+    return customerDashboard(customers, rows, filterRows(rows, f), f)
+  }, [dash, customers]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const changeFilters = (patch) =>
     setFilters((f) => {
@@ -159,7 +181,10 @@ function Dashboard({ settings, onSettingsChange }) {
               channels={state.channels}
             />
             {dash && dash.rowCount > 0 ? (
-              <DashboardBody dash={dash} />
+              <>
+                <DashboardBody dash={dash} />
+                {custDash && <CustomerSection data={custDash} />}
+              </>
             ) : (
               <div className="rounded-2xl border border-line bg-surface p-6 text-ink-2">{t('noRows')}</div>
             )}

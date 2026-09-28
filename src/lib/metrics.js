@@ -460,3 +460,158 @@ export function computeDashboard(rows, filters, minDate) {
     basket: basketPairs(current, 10),
   }
 }
+
+// ---------- Member customers (customers.csv) ----------
+
+// Age groups sorted youngest to oldest (for display order)
+export const AGE_GROUPS = ['ต่ำกว่า 18', '18-24', '25-34', '35-44', '45-54', '55+']
+export const GENDERS = ['หญิง', 'ชาย', 'ไม่ระบุ']
+
+/**
+ * Convert customers.csv into a shape ready to compute with
+ * branchNames = { B01: 'สยาม', … } from branches.csv (used to turn home_branch_id into a name)
+ */
+export function prepareCustomers(rawCustomers, branchNames = {}) {
+  return rawCustomers
+    .filter((c) => c.customer_id?.trim())
+    .map((c) => ({
+      id: c.customer_id.trim(),
+      nickname: c.nickname?.trim() ?? '',
+      gender: c.gender?.trim() || 'ไม่ระบุ',
+      ageGroup: c.age_group?.trim() || 'ไม่ระบุ',
+      homeBranch: branchNames[c.home_branch_id?.trim()] ?? c.home_branch_id?.trim() ?? '—',
+      joined: c.joined_date?.trim().slice(0, 10) ?? '',
+      phone: c.phone?.trim() ?? '',
+    }))
+}
+
+/** Turn branches.csv into { branch_id: branch name } */
+export function branchNameMap(rawBranches) {
+  return Object.fromEntries((rawBranches ?? []).map((b) => [b.branch_id?.trim(), b.branch?.trim()]))
+}
+
+/**
+ * Purchase history per member from every sales row up to date `to`
+ * Returns Map(customer_id -> { first, orders:Set, sales, byBranch: Map(branch -> sales) })
+ */
+function purchaseHistory(rows, to) {
+  const history = new Map()
+  for (const r of rows) {
+    if (!r.customer || r.date > to) continue
+    let h = history.get(r.customer)
+    if (!h) history.set(r.customer, (h = { first: r.date, orders: new Set(), sales: 0, byBranch: new Map() }))
+    if (r.date < h.first) h.first = r.date
+    h.orders.add(r.orderId)
+    h.sales += r.amount
+    h.byBranch.set(r.branch, (h.byBranch.get(r.branch) ?? 0) + r.amount)
+  }
+  return history
+}
+
+/** Every month from "YYYY-MM" a to b (inclusive) */
+function monthsBetween(a, b) {
+  const out = []
+  let [y, m] = a.split('-').map(Number)
+  const [yb, mb] = b.split('-').map(Number)
+  while (y < yb || (y === yb && m <= mb)) {
+    out.push(`${y}-${String(m).padStart(2, '0')}`)
+    m++
+    if (m > 12) {
+      m = 1
+      y++
+    }
+  }
+  return out
+}
+
+/**
+ * Member-customer summary for the selected period/filters
+ *   base (member base) = members who had joined by the last day of the range (and match the branch filter by home branch)
+ *   kpis: total members / members of the base who bought in this period (never more than the total) / never bought at all (up to `to`) / new members in this period
+ *   newByMonth: new members per month, from joined_date
+ *   ageGender: member count per age group × gender
+ *   spendByAge: sales in this period by the buyer's age group: buyers, spend per person, average per bill
+ *   byHomeBranch: members per home branch + % who have bought + % who buy most at their home branch
+ * rows = every sales row (prepareRows), current = sales rows after filtering
+ */
+export function customerDashboard(customers, rows, current, { from, to, branch = 'all' }) {
+  const base = customers.filter((c) => c.joined && c.joined <= to && (branch === 'all' || c.homeBranch === branch))
+  const history = purchaseHistory(rows, to)
+  const byId = new Map(customers.map((c) => [c.id, c]))
+
+  const baseIds = new Set(base.map((c) => c.id))
+  const buyersInRange = new Set(current.filter((r) => baseIds.has(r.customer)).map((r) => r.customer))
+  const neverBought = base.filter((c) => !history.has(c.id)).length
+  const newInRange = base.filter((c) => c.joined >= from).length
+
+  // New members per month (only months inside the selected range)
+  const joinedCount = new Map()
+  for (const c of base) {
+    if (c.joined < from) continue
+    const m = c.joined.slice(0, 7)
+    joinedCount.set(m, (joinedCount.get(m) ?? 0) + 1)
+  }
+  // partial = the range doesn't cover the whole month (e.g. data ends on the 20th), shown faded so it isn't mistaken for a drop
+  const newByMonth = monthsBetween(from.slice(0, 7), to.slice(0, 7)).map((month) => ({
+    month,
+    count: joinedCount.get(month) ?? 0,
+    partial: from > `${month}-01` || to < monthEnd(month),
+  }))
+
+  // Age group × gender
+  const ageGender = AGE_GROUPS.map((ageGroup) => {
+    const row = { ageGroup, total: 0 }
+    for (const g of GENDERS) row[g] = 0
+    for (const c of base) {
+      if (c.ageGroup !== ageGroup) continue
+      row[GENDERS.includes(c.gender) ? c.gender : 'ไม่ระบุ']++
+      row.total++
+    }
+    return row
+  })
+
+  // Sales in this period by age group (join sales -> customers via customer_id)
+  const ageStats = new Map(AGE_GROUPS.map((a) => [a, { buyers: new Set(), orders: new Set(), sales: 0 }]))
+  for (const r of current) {
+    const c = r.customer && byId.get(r.customer)
+    const s = c && ageStats.get(c.ageGroup)
+    if (!s) continue
+    s.buyers.add(r.customer)
+    s.orders.add(r.orderId)
+    s.sales += r.amount
+  }
+  const spendByAge = AGE_GROUPS.map((ageGroup) => {
+    const s = ageStats.get(ageGroup)
+    return {
+      ageGroup,
+      buyers: s.buyers.size,
+      sales: s.sales,
+      perMember: s.buyers.size ? s.sales / s.buyers.size : 0,
+      aov: s.orders.size ? s.sales / s.orders.size : 0,
+    }
+  })
+
+  // Home branch: member count, share who have bought, share whose most-bought branch is the home branch
+  const homeMap = new Map()
+  for (const c of base) {
+    let h = homeMap.get(c.homeBranch)
+    if (!h) homeMap.set(c.homeBranch, (h = { branch: c.homeBranch, members: 0, buyers: 0, atHome: 0 }))
+    h.members++
+    const p = history.get(c.id)
+    if (!p) continue
+    h.buyers++
+    const top = [...p.byBranch].sort((a, b) => b[1] - a[1])[0][0]
+    if (top === c.homeBranch) h.atHome++
+  }
+  const byHomeBranch = [...homeMap.values()]
+    .map((h) => ({ ...h, buyerShare: h.members ? (h.buyers / h.members) * 100 : 0, atHomeShare: h.buyers ? (h.atHome / h.buyers) * 100 : 0 }))
+    .sort((a, b) => b.members - a.members)
+
+  return {
+    kpis: { total: base.length, buyersInRange: buyersInRange.size, neverBought, newInRange },
+    newByMonth,
+    ageGender,
+    spendByAge,
+    byHomeBranch,
+  }
+}
