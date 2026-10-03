@@ -140,6 +140,8 @@ function Dashboard({ settings, onSettingsChange }) {
     })
 
   const subtitle = range ? t('dataRange', { from: d.shortDate(range.from), to: d.shortDate(range.to) }) : null
+  // แท็บ Lab 2.2 / สด / ทดสอบ Rules ไม่ใช้ตัวกรองด้านบน จึงซ่อนตัวกรองในแท็บเหล่านั้น
+  const usesFilters = tab !== 'lab2' && tab !== 'live' && tab !== 'rules'
 
   return (
     <div className="min-h-screen bg-page">
@@ -184,32 +186,31 @@ function Dashboard({ settings, onSettingsChange }) {
 
         {status === 'ready' && (
           <div className="space-y-4 sm:space-y-6">
-            {tab !== 'live' && tab !== 'rules' && (
-            <FilterBar
-              filters={{ ...filters, ...range }}
-              onChange={changeFilters}
-              bounds={bounds}
-              branches={state.branches}
-              channels={state.channels}
-            />
+            {/* แท็บอยู่บนสุดเสมอ ตำแหน่งเดียวกันทุกหน้า (ไม่กระโดดตอนสลับแท็บ) ตัวกรองอยู่ใต้แท็บ และแสดงเฉพาะแท็บที่ใช้ตัวกรอง */}
+            <TabBar tab={tab} onChange={setTab} />
+            {usesFilters && (
+              <FilterBar
+                filters={{ ...filters, ...range }}
+                onChange={changeFilters}
+                bounds={bounds}
+                branches={state.branches}
+                channels={state.channels}
+              />
             )}
-            {dash && dash.rowCount > 0 ? (
-              <>
-                <TabBar tab={tab} onChange={setTab} />
-                <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="space-y-4 sm:space-y-6">
-                  {tab === 'lab2' ? (
-                    <Lab2Page rows={rows} products={products} />
-                  ) : tab === 'live' || tab === 'rules' ? (
-                    <Suspense fallback={<div className="rounded-2xl border border-line bg-surface p-6 text-ink-2">{t('loading')}</div>}>
-                      <Lab3Tab view={tab} />
-                    </Suspense>
-                  ) : (
-                    <DashboardBody dash={dash} custDash={custDash} tab={tab} />
-                  )}
-                </div>
-              </>
-            ) : (
+            {usesFilters && !(dash && dash.rowCount > 0) ? (
               <div className="rounded-2xl border border-line bg-surface p-6 text-ink-2">{t('noRows')}</div>
+            ) : (
+              <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="space-y-4 sm:space-y-6">
+                {tab === 'lab2' ? (
+                  <Lab2Page rows={rows} products={products} />
+                ) : tab === 'live' || tab === 'rules' ? (
+                  <Suspense fallback={<div className="rounded-2xl border border-line bg-surface p-6 text-ink-2">{t('loading')}</div>}>
+                    <Lab3Tab view={tab} />
+                  </Suspense>
+                ) : (
+                  <DashboardBody dash={dash} custDash={custDash} tab={tab} />
+                )}
+              </div>
             )}
           </div>
         )}
