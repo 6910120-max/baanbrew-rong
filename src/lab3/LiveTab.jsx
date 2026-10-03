@@ -336,15 +336,11 @@ export default function LiveTab() {
         className="relative flex min-h-[700px] items-end overflow-hidden rounded-3xl border border-line shadow-sm sm:min-h-[580px] sm:items-center"
         style={{ backgroundImage: `url(${loginBg})`, backgroundSize: 'cover', backgroundPosition: '78% center' }}
       >
-        <div className="w-full p-4 sm:py-10 sm:pr-10 sm:pl-[6%] lg:pl-[9%]">
+        <div className="w-full p-4 sm:py-10 sm:pr-10 sm:pl-[4%] lg:pl-[14%]">
           <div className="w-full max-w-sm rounded-2xl bg-white/85 p-6 text-emerald-950 shadow-xl ring-1 ring-white/70 backdrop-blur-md sm:p-7">
             <p className="text-xs font-semibold tracking-wide text-emerald-700 uppercase">บ้านบรู · ยอดขายสด</p>
             <h2 className="mt-1 text-2xl leading-tight font-bold">{mode === 'signup' ? 'สมัครสมาชิก' : 'ยินดีต้อนรับกลับมา'}</h2>
-            <p className="mt-2 text-sm text-emerald-900/75">
-              {mode === 'signup' ? 'สร้างบัญชีด้วยอีเมลและรหัสผ่านเพื่อเข้าใช้งาน' : 'เข้าสู่ระบบเพื่อดูยอดขายแบบเรียลไทม์และบันทึกยอดขายของสาขา'}
-            </p>
-
-            <form onSubmit={submitEmail} className="mt-4 space-y-3">
+            <form onSubmit={submitEmail} className="mt-5 space-y-3">
               <label className="block text-sm font-medium text-emerald-900">
                 อีเมล
                 <input
