@@ -64,15 +64,56 @@ const authErrorText = (e) =>
 
 const card = 'rounded-2xl border border-line bg-surface shadow-sm'
 
+/** การ์ดโปรไฟล์ผู้ใช้: รูป (หรืออักษรแรกถ้าไม่มีรูป) + จุดสถานะออนไลน์ + ทักทายด้วยชื่อ + ปุ่มออกจากระบบ */
 function UserChip({ user }) {
+  const name = user.displayName ?? user.email?.split('@')[0] ?? 'ผู้ใช้'
+  const initial = [...name][0]?.toUpperCase() ?? '?'
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-line bg-surface px-2 py-1">
-      {user.photoURL && <img src={user.photoURL} alt="" referrerPolicy="no-referrer" className="h-7 w-7 rounded-full" />}
-      <span className="max-w-[10rem] truncate text-sm text-ink">{user.displayName ?? user.email}</span>
-      <button type="button" onClick={() => signOut(auth)} className="rounded-lg px-2 py-1 text-xs text-ink-2 hover:bg-surface-2">
-        ออกจากระบบ
+    <div className="flex items-center gap-3 rounded-full border border-line bg-surface py-1 pr-1.5 pl-1 shadow-sm">
+      <span className="relative shrink-0">
+        {user.photoURL ? (
+          <img
+            src={user.photoURL}
+            alt=""
+            referrerPolicy="no-referrer"
+            className="h-10 w-10 rounded-full ring-2 ring-brand/70 ring-offset-2 ring-offset-surface"
+          />
+        ) : (
+          <span className="bg-grad grid h-10 w-10 place-items-center rounded-full text-base font-semibold text-white ring-2 ring-brand/70 ring-offset-2 ring-offset-surface">
+            {initial}
+          </span>
+        )}
+        <span title="ออนไลน์" className="absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full border-2 border-surface bg-up" />
+      </span>
+      <span className="hidden min-w-0 leading-tight sm:block">
+        <span className="block text-[11px] text-ink-3">สวัสดี 👋</span>
+        <span className="block max-w-[11rem] truncate text-sm font-semibold text-ink">{name}</span>
+      </span>
+      <button
+        type="button"
+        onClick={() => signOut(auth)}
+        title="ออกจากระบบ"
+        aria-label="ออกจากระบบ"
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-2 transition hover:bg-surface-2 hover:text-down"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+        </svg>
       </button>
     </div>
+  )
+}
+
+/** ป้าย "สด" กะพริบ บอกว่าข้อมูลอัปเดตแบบเรียลไทม์ */
+function LiveBadge() {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-xs font-semibold text-up">
+      <span className="relative flex h-2 w-2">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-up opacity-60" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-up" />
+      </span>
+      LIVE
+    </span>
   )
 }
 
@@ -173,7 +214,10 @@ function Dashboard({ user }) {
     <div className="grid gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
       <div className="min-w-0 space-y-4 sm:space-y-6">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="mr-auto text-lg font-semibold text-ink">ยอดขายสด · Firestore</h2>
+          <div className="mr-auto flex items-center gap-3">
+            <h2 className="text-lg font-semibold text-ink">ยอดขายสด · Firestore</h2>
+            <LiveBadge />
+          </div>
           <div role="group" aria-label="ช่วงเวลา" className="flex gap-0.5 rounded-xl border border-line bg-surface p-0.5">
             {RANGES.map((r) => (
               <button
