@@ -28,3 +28,9 @@ dist-ssr
 
 # Claude Code local settings
 .claude/
+
+# Secrets (Firebase config and service account key)
+.env
+.env.*
+!.env.example
+secrets/

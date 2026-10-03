@@ -9,6 +9,12 @@ const ICONS = {
   lab2: (
     <path d="M9 3h6M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3M7.5 15h9" />
   ),
+  live: (
+    <path d="M13 2 4 14h7l-1 8 9-12h-7z" />
+  ),
+  rules: (
+    <path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5zM9 12l2 2 4-4" />
+  ),
   products: (
     <>
       <path d="M17 8h1a4 4 0 0 1 0 8h-1M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z" />
@@ -52,7 +58,7 @@ function TabBar({ tab, onChange: setTab }) {
           role="tablist"
           aria-label={t('tabsLabel')}
           onKeyDown={onKeyDown}
-          className="grid grid-cols-4 gap-1 rounded-2xl border border-line bg-surface p-1 shadow-sm sm:inline-grid sm:w-auto"
+          className="grid grid-cols-3 sm:grid-cols-6 gap-1 rounded-2xl border border-line bg-surface p-1 shadow-sm sm:inline-grid sm:w-auto"
         >
           {TABS.map((key) => {
             const active = tab === key
