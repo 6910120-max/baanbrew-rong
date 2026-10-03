@@ -396,8 +396,6 @@ export default function LiveTab() {
   const [password, setPassword] = useState('')
   const [mode, setMode] = useState('login') // 'login' | 'signup'
   const [busy, setBusy] = useState(false)
-  // หน้าสมัครสมาชิกซ่อนไว้ ไม่มีปุ่มบนหน้าเว็บ เปิดได้เฉพาะเมื่อมี ?signup ใน URL (เช่น /?signup#live)
-  const canSignup = useMemo(() => new URLSearchParams(window.location.search).has('signup'), [])
 
   useEffect(() => {
     if (!isConfigured) return undefined
@@ -498,18 +496,20 @@ export default function LiveTab() {
                 ❌ {authError}
               </p>
             )}
-            {canSignup && (
+            {/* กด "สมัครสมาชิก" แล้วการ์ดเดียวกันจะเปลี่ยนเป็นฟอร์มสมัคร (กดอีกครั้งเพื่อกลับมาเข้าสู่ระบบ) */}
+            <p className="mt-4 text-center text-sm text-emerald-900/75">
+              {mode === 'signup' ? 'มีบัญชีแล้ว?' : 'ยังไม่มีบัญชี?'}{' '}
               <button
                 type="button"
                 onClick={() => {
                   setMode(mode === 'signup' ? 'login' : 'signup')
                   setAuthError(null)
                 }}
-                className="mt-4 block w-full text-center text-sm font-medium text-emerald-700 hover:underline"
+                className="font-semibold text-emerald-700 underline-offset-2 hover:underline"
               >
-                {mode === 'signup' ? 'มีบัญชีแล้ว? เข้าสู่ระบบ' : 'ยังไม่มีบัญชี? สมัครสมาชิก'}
+                {mode === 'signup' ? 'เข้าสู่ระบบ' : 'สมัครสมาชิก'}
               </button>
-            )}
+            </p>
             <p className="mt-4 text-center text-xs text-emerald-900/60">ข้อมูลยอดขายเปิดดูได้เฉพาะผู้ที่ล็อกอินเท่านั้น</p>
           </div>
         </div>
