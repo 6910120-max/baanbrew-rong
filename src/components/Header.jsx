@@ -54,7 +54,7 @@ function Header({ settings, onChange, subtitle, stats = [], onFile, showFileButt
         <img src={mascot} alt="" className="absolute bottom-0 left-2 h-32 w-auto drop-shadow-lg select-none sm:left-6 sm:h-48" />
       </div>
 
-      <div className="relative mx-auto flex max-w-7xl flex-wrap items-end justify-between gap-4 px-4 pt-6 pb-16 pl-[8.5rem] sm:pt-8 sm:pr-6 sm:pb-20 sm:pl-[13.5rem]">
+      <div className="relative mx-auto flex max-w-7xl flex-wrap items-end justify-between gap-4 px-4 pt-6 pb-16 pl-[10rem] sm:pt-8 sm:pr-6 sm:pb-20 sm:pl-[15.5rem]">
         <div>
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight drop-shadow-sm sm:text-4xl">{t('appTitle')}</h1>
