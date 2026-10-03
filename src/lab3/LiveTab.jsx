@@ -7,6 +7,7 @@ import { auth, db, googleProvider, isConfigured } from './firebase.js'
 import { addDays, todayBangkok } from './time.js'
 import { BRANCHES } from './saleModel.js'
 import SaleForm from './SaleForm.jsx'
+import loginBg from '../assets/login-bg.webp'
 import KpiCard from '../components/KpiCard'
 import ChartCard from '../components/ChartCard'
 import DailySalesChart from '../components/DailySalesChart'
@@ -292,17 +293,39 @@ export default function LiveTab() {
   if (user === undefined) return <div className={`${card} p-6 text-ink-2`}>กำลังตรวจสอบการเข้าสู่ระบบ…</div>
   if (user === null) {
     return (
-      <div className={`${card} mx-auto max-w-md p-8 text-center`}>
-        <h2 className="text-xl font-semibold text-ink">ยอดขายสด</h2>
-        <p className="mt-2 text-ink-2">ต้องเข้าสู่ระบบก่อนจึงจะดูและบันทึกยอดขายได้</p>
-        <button type="button" onClick={login} className="bg-grad mt-5 rounded-xl px-5 py-2.5 text-sm font-medium text-white shadow">
-          เข้าสู่ระบบด้วย Google
-        </button>
-        {authError && (
-          <p role="alert" className="mt-4 text-sm text-down">
-            ❌ {authError}
-          </p>
-        )}
+      // ฉากหลังเป็นภาพมาสคอตอยู่ฝั่งขวา จึงวางการ์ดล็อกอินไว้ฝั่งซ้าย (มือถือวางไว้ด้านล่างเพื่อไม่บังหน้ามาสคอต)
+      <div
+        className="relative flex min-h-[540px] items-end overflow-hidden rounded-3xl border border-line shadow-sm sm:min-h-[480px] sm:items-center"
+        style={{ backgroundImage: `url(${loginBg})`, backgroundSize: 'cover', backgroundPosition: '78% center' }}
+      >
+        <div className="w-full p-4 sm:p-10">
+          <div className="w-full max-w-sm rounded-2xl bg-white/85 p-6 text-emerald-950 shadow-xl ring-1 ring-white/70 backdrop-blur-md sm:p-7">
+            <p className="text-xs font-semibold tracking-wide text-emerald-700 uppercase">บ้านบรู · ยอดขายสด</p>
+            <h2 className="mt-1 text-2xl leading-tight font-bold">ยินดีต้อนรับกลับมา</h2>
+            <p className="mt-2 text-sm text-emerald-900/75">เข้าสู่ระบบเพื่อดูยอดขายแบบเรียลไทม์และบันทึกยอดขายของสาขา</p>
+            <button
+              type="button"
+              onClick={login}
+              className="bg-grad mt-5 flex w-full items-center justify-center gap-3 rounded-xl px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:brightness-110 active:scale-[0.99]"
+            >
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-white">
+                <svg width="14" height="14" viewBox="0 0 48 48" aria-hidden>
+                  <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z" />
+                  <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.7 6c4.5-4.2 6.9-10.3 6.9-17.7z" />
+                  <path fill="#FBBC05" d="M10.5 28.7c-.5-1.5-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z" />
+                  <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.1 1.4-4.9 2.3-8.2 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z" />
+                </svg>
+              </span>
+              เข้าสู่ระบบด้วย Google
+            </button>
+            {authError && (
+              <p role="alert" className="mt-4 rounded-lg bg-red-50 p-2.5 text-sm text-red-700">
+                ❌ {authError}
+              </p>
+            )}
+            <p className="mt-4 text-center text-xs text-emerald-900/60">ข้อมูลยอดขายเปิดดูได้เฉพาะผู้ที่ล็อกอินเท่านั้น</p>
+          </div>
+        </div>
       </div>
     )
   }
