@@ -173,7 +173,7 @@ function LiveBadge() {
 }
 
 function Dashboard({ user }) {
-  const { tv } = useI18n()
+  const { tv, d } = useI18n()
   const [rangeId, setRangeId] = useState('7')
   const [branch, setBranch] = useState('all')
   const [docs, setDocs] = useState([]) // [{ id, ...fields }]
@@ -364,7 +364,10 @@ function Dashboard({ user }) {
                   <tbody>
                     {recent.map((r) => (
                       <tr key={r.id} className={`border-t border-line text-ink transition-colors duration-700 ${fresh.has(r.id) ? 'bg-surface-2' : ''}`}>
-                        <td className="py-1.5 tabular-nums">{r.datetime.slice(5, 16).replace('T', ' ')}</td>
+                        {/* วันที่รูปแบบเดียวกับกราฟ (พ.ศ. แบบสั้น เช่น 3 ต.ค. 69) ตามด้วยเวลา ตัดจากข้อความตรง ๆ จึงไม่เลื่อนเป็น UTC */}
+                        <td className="py-1.5 whitespace-nowrap tabular-nums">
+                          {d.axisDate(r.datetime.slice(0, 10))} · {r.datetime.slice(11, 16)}
+                        </td>
                         <td className="py-1.5">{tv(r.branch)}</td>
                         <td className="py-1.5">{productName[r.product_id] ?? r.product_id}</td>
                         <td className="py-1.5 text-right tabular-nums">{r.qty}</td>
