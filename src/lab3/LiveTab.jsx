@@ -68,6 +68,16 @@ const card = 'rounded-2xl border border-line bg-surface shadow-sm'
 function UserChip({ user }) {
   const name = user.displayName ?? user.email?.split('@')[0] ?? 'ผู้ใช้'
   const initial = [...name][0]?.toUpperCase() ?? '?'
+  const [confirming, setConfirming] = useState(false)
+
+  // กด Esc เพื่อปิดหน้าต่างยืนยัน
+  useEffect(() => {
+    if (!confirming) return undefined
+    const onKey = (e) => e.key === 'Escape' && setConfirming(false)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [confirming])
+
   return (
     <div className="flex items-center gap-3 rounded-full border border-line bg-surface py-1 pr-1.5 pl-1 shadow-sm">
       <span className="relative shrink-0">
@@ -91,7 +101,7 @@ function UserChip({ user }) {
       </span>
       <button
         type="button"
-        onClick={() => signOut(auth)}
+        onClick={() => setConfirming(true)}
         title="ออกจากระบบ"
         aria-label="ออกจากระบบ"
         className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-2 transition hover:bg-surface-2 hover:text-down"
@@ -100,6 +110,51 @@ function UserChip({ user }) {
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
         </svg>
       </button>
+
+      {confirming && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4 backdrop-blur-sm"
+          onClick={() => setConfirming(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="logout-title"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-2xl border border-line bg-surface p-6 text-center shadow-2xl"
+          >
+            <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-surface-2 text-down">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+              </svg>
+            </span>
+            <h3 id="logout-title" className="mt-3 text-lg font-semibold text-ink">
+              ออกจากระบบ?
+            </h3>
+            <p className="mt-1 text-sm text-ink-2">คุณกำลังจะออกจากระบบของ {name} ต้องเข้าสู่ระบบใหม่เพื่อดูและบันทึกยอดขายอีกครั้ง</p>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                autoFocus
+                onClick={() => setConfirming(false)}
+                className="rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink transition hover:bg-surface-2"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirming(false)
+                  signOut(auth)
+                }}
+                className="rounded-xl bg-down px-4 py-2.5 text-sm font-semibold text-white shadow transition hover:brightness-110"
+              >
+                ออกจากระบบ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
