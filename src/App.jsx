@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import Header from './components/Header'
 import FilterBar from './components/FilterBar'
 import { PRESETS } from './lib/presets'
@@ -16,6 +16,9 @@ import RfmSegments from './components/RfmSegments'
 import CustomerSection from './components/CustomerSection'
 import TabBar from './components/TabBar'
 import Lab2Page from './lab2/Lab2Page'
+
+// Lab 3 (Firebase) โหลดเมื่อเปิดแท็บเท่านั้น เพื่อไม่ให้หน้าอื่นช้าลง
+const Lab3Tab = lazy(() => import('./lab3/Lab3Tab'))
 import {
   addDays,
   branchNameMap,
@@ -181,6 +184,7 @@ function Dashboard({ settings, onSettingsChange }) {
 
         {status === 'ready' && (
           <div className="space-y-4 sm:space-y-6">
+            {tab !== 'live' && tab !== 'rules' && (
             <FilterBar
               filters={{ ...filters, ...range }}
               onChange={changeFilters}
@@ -188,11 +192,20 @@ function Dashboard({ settings, onSettingsChange }) {
               branches={state.branches}
               channels={state.channels}
             />
+            )}
             {dash && dash.rowCount > 0 ? (
               <>
                 <TabBar tab={tab} onChange={setTab} />
                 <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="space-y-4 sm:space-y-6">
-                  {tab === 'lab2' ? <Lab2Page rows={rows} products={products} /> : <DashboardBody dash={dash} custDash={custDash} tab={tab} />}
+                  {tab === 'lab2' ? (
+                    <Lab2Page rows={rows} products={products} />
+                  ) : tab === 'live' || tab === 'rules' ? (
+                    <Suspense fallback={<div className="rounded-2xl border border-line bg-surface p-6 text-ink-2">{t('loading')}</div>}>
+                      <Lab3Tab view={tab} />
+                    </Suspense>
+                  ) : (
+                    <DashboardBody dash={dash} custDash={custDash} tab={tab} />
+                  )}
                 </div>
               </>
             ) : (
