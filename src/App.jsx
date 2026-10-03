@@ -15,6 +15,7 @@ import MemberCompare from './components/MemberCompare'
 import RfmSegments from './components/RfmSegments'
 import CustomerSection from './components/CustomerSection'
 import TabBar from './components/TabBar'
+import Lab2Page from './lab2/Lab2Page'
 import {
   addDays,
   branchNameMap,
@@ -89,6 +90,10 @@ function Dashboard({ settings, onSettingsChange }) {
   }, [])
 
   // Member customers (optional): if customers.csv is missing, the customer section just doesn't show
+  const [products, setProducts] = useState([])
+  useEffect(() => {
+    loadOptionalCsv('/products.csv', ['product_id', 'product_name']).then((p) => p && setProducts(p))
+  }, [])
   const [customers, setCustomers] = useState(null)
   useEffect(() => {
     Promise.all([
@@ -187,7 +192,7 @@ function Dashboard({ settings, onSettingsChange }) {
               <>
                 <TabBar tab={tab} onChange={setTab} />
                 <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="space-y-4 sm:space-y-6">
-                  <DashboardBody dash={dash} custDash={custDash} tab={tab} />
+                  {tab === 'lab2' ? <Lab2Page rows={rows} products={products} /> : <DashboardBody dash={dash} custDash={custDash} tab={tab} />}
                 </div>
               </>
             ) : (

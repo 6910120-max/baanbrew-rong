@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-export const TABS = ['overview', 'products', 'customers']
+export const TABS = ['overview', 'lab2', 'customers', 'products']
 const STORAGE_KEY = 'baanbrew-tab'
 
 /** Read the tab from the URL (#customers) first, then the last tab used in this browser, otherwise overview */
