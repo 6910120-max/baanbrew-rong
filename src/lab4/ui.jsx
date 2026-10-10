@@ -1,68 +1,106 @@
-import { LoginCard, UserChip, authErrorText } from "../lab3/AuthBar.jsx";
-import { useState } from "react";
+// ส่วนประกอบร่วมของแท็บ Lab 4 ในธีมของเรา (สี/โหมดมืดมาจาก CSS variables ใน index.css)
+import { useState } from 'react'
+import ChartCard from '../components/ChartCard'
 
-export const INK = "#44403c";
-export const MUTED = "#a8a29e";
-export const GREEN = ["#E6F2EC", "#BFDECD", "#8FC4A8", "#5BA582", "#2F7D5B", "#1F5A40"]; // ไล่สีเดียว อ่อน→เข้ม
-export const MAIN = GREEN[4];
-export const pct = (x, d = 0) => (x * 100).toFixed(d) + "%";
-export const thaiDay = (iso) => new Date(iso + "T00:00:00").toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" });
-export const thaiMonth = (ym) => new Date(ym + "-01T00:00:00").toLocaleDateString("th-TH", { month: "short", year: "2-digit" });
+export const INK = 'var(--ink)'
+export const MUTED = 'var(--ink-3)'
+// ไล่สีเดียว อ่อน→เข้ม ตามสีธีมที่เลือก
+export const GREEN = ['var(--heat-0)', 'var(--heat-1)', 'var(--heat-2)', 'var(--heat-3)', 'var(--heat-4)', 'var(--c1)']
+export const MAIN = 'var(--c1)'
+export const pct = (x, d = 0) => (x * 100).toFixed(d) + '%'
+export const thaiDay = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })
+export const thaiMonth = (ym) => new Date(ym + '-01T00:00:00').toLocaleDateString('th-TH', { month: 'short', year: '2-digit' })
+export const tooltipStyle = { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 13 }
 
-export function Card({ title, sub, children, right }) {
+export function Card({ title, sub, children, table, filename, footer }) {
   return (
-    <section className="rounded-xl bg-white p-5 ring-1 ring-stone-200">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h2 className="text-lg font-semibold">{title}</h2>
-          {sub && <p className="text-sm text-stone-500">{sub}</p>}
-        </div>
-        {right}
-      </div>
-      <div className="mt-3">{children}</div>
-    </section>
-  );
+    <ChartCard title={title} subtitle={sub} table={table} filename={filename} footer={footer}>
+      {children}
+    </ChartCard>
+  )
 }
 
 /** แสดงแทนส่วนที่ยังคำนวณไม่ได้ เช่น ฟังก์ชันยังเป็น "ยังไม่ได้ทำ" */
 export function Pending({ lab, error }) {
   return (
-    <div className="rounded-lg border-2 border-dashed border-stone-300 p-6 text-center text-stone-500">
-      <div className="font-medium">รอ {lab}</div>
+    <div className="rounded-xl border-2 border-dashed border-line p-6 text-center text-ink-3">
+      <div className="font-medium text-ink-2">รอ {lab}</div>
       <div className="mt-1 text-sm">{error}</div>
     </div>
-  );
+  )
 }
 
 export function Insight({ children }) {
-  return <p className="mt-3 rounded-lg bg-stone-50 px-3 py-2 text-sm text-stone-700">💡 {children}</p>;
+  return <p className="mt-3 rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2">💡 {children}</p>
+}
+
+function authErrorText(e) {
+  const code = e?.code ?? ''
+  if (code === 'auth/popup-closed-by-user') return 'ปิดหน้าต่างล็อกอินก่อนเสร็จ ลองใหม่อีกครั้ง'
+  if (code === 'auth/unauthorized-domain') return 'โดเมนนี้ยังไม่ได้รับอนุญาต เพิ่มใน Authentication → Settings → Authorized domains'
+  if (code === 'auth/operation-not-allowed') return 'ยังไม่ได้เปิด Google sign-in ใน Authentication → Sign-in method'
+  if (code === 'auth/popup-blocked') return 'เบราว์เซอร์บล็อก popup อนุญาต popup สำหรับเว็บนี้แล้วลองใหม่'
+  return e?.message ?? String(e)
+}
+
+function LoginCard({ onSignIn, error }) {
+  return (
+    <div className="mx-auto max-w-md rounded-2xl border border-line bg-surface p-8 text-center shadow-sm">
+      <h2 className="text-xl font-semibold text-ink">ต้องเข้าสู่ระบบก่อน</h2>
+      <p className="mt-2 text-sm text-ink-2">ผลวิเคราะห์ลูกค้าเปิดให้เฉพาะผู้ที่ล็อกอินแล้ว (ล็อกอินเดียวกับแท็บ “สด”)</p>
+      <button
+        type="button"
+        onClick={onSignIn}
+        className="bg-grad mt-5 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:brightness-110"
+      >
+        เข้าสู่ระบบด้วย Google
+      </button>
+      {error && (
+        <p role="alert" className="mt-4 rounded-lg bg-down/10 p-2.5 text-sm text-down">
+          ❌ {error}
+        </p>
+      )}
+    </div>
+  )
 }
 
 /** ส่วนหัวร่วม: ล็อกอิน, ความสดของข้อมูล, จำนวนเอกสารที่อ่าน */
-export function AnalyticsShell({ source, state, title, children }) {
-  const { user, data, error } = state;
-  const [authError, setAuthError] = useState(null);
-  if (user === undefined) return <p className="text-stone-500">กำลังตรวจสอบการเข้าสู่ระบบ…</p>;
-  if (!user) return <LoginCard onSignIn={() => source.signIn().catch((e) => setAuthError(authErrorText(e)))} error={authError} />;
-  const m = data?.meta;
+export function AnalyticsShell({ source, state, children }) {
+  const { user, data, error } = state
+  const [authError, setAuthError] = useState(null)
+  if (user === undefined) return <div className="rounded-2xl border border-line bg-surface p-6 text-ink-2">กำลังตรวจสอบการเข้าสู่ระบบ…</div>
+  if (!user) return <LoginCard onSignIn={() => source.signIn().catch((e) => setAuthError(authErrorText(e)))} error={authError} />
+  const m = data?.meta
   return (
-    <div>
-      <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-bold" style={{ color: "#6B3E26" }}>{title}</h1>
-          {m && (
-            <p className="mt-1 text-sm text-stone-500">
-              ข้อมูลถึง {thaiDay(m.asOf)} · {m.rows?.toLocaleString()} รายการ ·{" "}
-              {m.builtBy === "demo" ? <span className="rounded bg-amber-100 px-2 py-0.5 text-amber-800">โหมดสาธิต คำนวณในเบราว์เซอร์</span>
-                : <>อัปเดต {m.builtAt ? new Date(m.builtAt).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" }) : "–"} โดย {m.builtBy === "github-actions" ? "GitHub Actions" : "เครื่องผู้สอน/ผู้เรียน"} · อ่าน {data.reads} เอกสาร</>}
-            </p>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-ink-3">
+        <p>
+          {m ? (
+            <>
+              ข้อมูลถึง {thaiDay(m.asOf)} · {m.rows?.toLocaleString()} รายการ ·{' '}
+              {m.builtBy === 'demo' ? (
+                <span className="rounded-md bg-surface-2 px-2 py-0.5 font-medium text-ink-2">โหมดสาธิต คำนวณในเบราว์เซอร์</span>
+              ) : (
+                <>
+                  อัปเดต {m.builtAt ? new Date(m.builtAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) : '–'} โดย{' '}
+                  {m.builtBy === 'github-actions' ? 'GitHub Actions' : 'เครื่องผู้สอน/ผู้เรียน'} · อ่าน {data.reads} เอกสาร
+                </>
+              )}
+            </>
+          ) : (
+            'ผลวิเคราะห์ที่คำนวณล่วงหน้าแล้ว (pre-aggregation)'
           )}
-        </div>
-        <UserChip user={user} onSignOut={() => source.signOut()} />
-      </header>
-      {error && <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-      {!data && !error && <p className="text-stone-500">กำลังโหลดผลวิเคราะห์…</p>}
+        </p>
+        <p className="flex items-center gap-2">
+          <span className="text-ink-2">{user.displayName ?? user.email}</span>
+          <button type="button" onClick={() => source.signOut()} className="rounded-lg px-2 py-1 hover:bg-surface-2 hover:text-ink">
+            ออกจากระบบ
+          </button>
+        </p>
+      </div>
+      {error && <p className="rounded-xl bg-down/10 p-3 text-sm text-down">{error}</p>}
+      {!data && !error && <div className="rounded-2xl border border-line bg-surface p-6 text-ink-2">กำลังโหลดผลวิเคราะห์…</div>}
       {data && children(data)}
     </div>
-  );
+  )
 }

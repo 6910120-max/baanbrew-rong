@@ -21,6 +21,9 @@ const ICONS = {
       <path d="M6 2v2M10 2v2M14 2v2" />
     </>
   ),
+  analytics: (
+    <path d="M3 3v18h18M7 15l4-4 3 3 5-6" />
+  ),
   customers: (
     <>
       <circle cx="9" cy="8" r="4" />
@@ -58,7 +61,7 @@ function TabBar({ tab, onChange: setTab }) {
           role="tablist"
           aria-label={t('tabsLabel')}
           onKeyDown={onKeyDown}
-          className="grid grid-cols-3 sm:grid-cols-6 gap-1 rounded-2xl border border-line bg-surface p-1 shadow-sm sm:inline-grid sm:w-auto"
+          className="grid grid-cols-3 sm:grid-cols-7 gap-1 rounded-2xl border border-line bg-surface p-1 shadow-sm sm:inline-grid sm:w-auto"
         >
           {TABS.map((key) => {
             const active = tab === key
