@@ -199,7 +199,7 @@ function CohortCard({ cohort }) {
     return xs.reduce((a, b) => a + b, 0) / xs.length
   })()
   return (
-    <Card title="Cohort · การกลับมาซื้อซ้ำ" sub="แถว = เดือนแรกที่ซื้อ · คอลัมน์ = เดือนที่เท่าไรหลังจากนั้น · ช่องลายขีด = เดือนล่าสุดที่ข้อมูลยังไม่ครบ">
+    <Card title="Cohort · การกลับมาซื้อซ้ำ" sub="แถว = เดือนแรกที่ซื้อ · คอลัมน์ = เดือนที่เท่าไรหลังจากนั้น · ช่องลายขีด = เดือนล่าสุดที่ข้อมูลยังไม่ครบ · เอาเมาส์ชี้ช่องเพื่อดูรายละเอียด">
       <div className="overflow-x-auto">
         <div className="inline-grid gap-[2px] text-xs tabular-nums" style={{ gridTemplateColumns: `72px 44px repeat(${MAXK + 1}, 40px)` }}>
           <div className="font-medium text-ink-3">เดือนแรก</div>
@@ -265,7 +265,7 @@ function AbcCard({ abc }) {
   return (
     <Card
       title="Pareto · ABC ของเมนู"
-      sub="แท่ง = สัดส่วนยอดขายแต่ละเมนู · เส้น = ยอดสะสม · แกนเดียวกันเป็น %"
+      sub="แท่ง = สัดส่วนยอดขายแต่ละเมนู · เส้น = ยอดสะสม · แกนเดียวกันเป็น % · เอาเมาส์ชี้แท่งเพื่อดูชื่อเมนู"
       filename="abc-menu"
       table={{
         columns: [
