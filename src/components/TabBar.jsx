@@ -64,7 +64,7 @@ function TabBar({ tab, onChange: setTab }) {
           role="tablist"
           aria-label={t('tabsLabel')}
           onKeyDown={onKeyDown}
-          className="grid grid-cols-3 sm:grid-cols-7 gap-1 rounded-2xl border border-line bg-surface p-1 shadow-sm sm:inline-grid sm:w-auto"
+          className="grid grid-cols-3 gap-1 rounded-2xl border border-line bg-surface p-1 shadow-sm sm:flex sm:w-full sm:overflow-x-auto"
         >
           {TABS.map((key) => {
             const active = tab === key
@@ -78,7 +78,7 @@ function TabBar({ tab, onChange: setTab }) {
                 aria-controls={`panel-${key}`}
                 tabIndex={active ? 0 : -1}
                 onClick={() => onChange(key)}
-                className={`flex h-10 items-center justify-center gap-2 rounded-xl px-2 text-sm font-medium transition sm:px-5 ${
+                className={`flex h-10 items-center justify-center gap-2 rounded-xl px-2 text-sm font-medium whitespace-nowrap transition sm:flex-1 sm:shrink-0 sm:px-4 ${
                   active ? 'bg-grad text-white shadow' : 'text-ink-2 hover:bg-surface-2 hover:text-ink'
                 }`}
               >
@@ -86,8 +86,8 @@ function TabBar({ tab, onChange: setTab }) {
                   {ICONS[key]}
                 </svg>
                 {/* Short label on phones, full label on wider screens */}
-                <span className="truncate sm:hidden">{t(`tab_${key}_short`)}</span>
-                <span className="hidden truncate sm:inline">{t(`tab_${key}`)}</span>
+                <span className="sm:hidden">{t(`tab_${key}_short`)}</span>
+                <span className="hidden sm:inline">{t(`tab_${key}`)}</span>
               </button>
             )
           })}
