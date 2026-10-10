@@ -14,6 +14,9 @@ const SEG_TH = Object.fromEntries(SEGMENTS.map((s) => [s.id, s]))
 const axisTick = { fill: 'var(--ink-3)', fontSize: 12 }
 const SHOW_MEMBERS = 15 // แสดงกี่คนในการ์ดรายชื่อ (CSV มีทั้งกลุ่ม)
 
+// ข้อมูลลูกค้า = ข้อมูลส่วนบุคคลตาม PDPA (รหัสสมาชิกเชื่อมกับประวัติการซื้อของคนคนหนึ่งได้)
+const PDPA_NOTICE = 'รายชื่อนี้มีรหัสสมาชิกและประวัติการซื้อของลูกค้า ใช้เพื่อการตลาดภายในร้านเท่านั้น ห้ามเผยแพร่หรือส่งต่อให้บุคคลภายนอก เก็บเท่าที่จำเป็น และลบไฟล์เมื่อใช้เสร็จ'
+
 // ---------------- RFM · รายชื่อลูกค้าในกลุ่มที่คลิก (Lab 4.1B) ----------------
 const MEMBER_COLUMNS = [
   { key: 'id', label: 'รหัสลูกค้า' },
@@ -41,7 +44,13 @@ function SegmentMembers({ segment, customers, onClose }) {
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => downloadCsv(`rfm-${segment.toLowerCase().replace(/\s+/g, '-')}.csv`, MEMBER_COLUMNS, list)}
+            onClick={() => {
+              // ให้ผู้ใช้รับทราบก่อนดาวน์โหลดทุกครั้ง
+              const message = `ข้อมูลส่วนบุคคล (PDPA)\n\n${PDPA_NOTICE}\n\nต้องการดาวน์โหลด CSV ${formatNumber(list.length)} รายการหรือไม่?`
+              if (window.confirm(message)) {
+                downloadCsv(`rfm-${segment.toLowerCase().replace(/\s+/g, '-')}.csv`, MEMBER_COLUMNS, list)
+              }
+            }}
             className="rounded-lg border border-line bg-surface px-3 py-1.5 text-sm font-medium text-ink transition hover:bg-surface-2"
           >
             ดาวน์โหลด CSV ({formatNumber(list.length)} แถว)
@@ -56,6 +65,9 @@ function SegmentMembers({ segment, customers, onClose }) {
           </button>
         </div>
       </div>
+      <p role="note" className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-ink-2">
+        <span className="font-semibold text-ink">⚠️ ข้อมูลส่วนบุคคล (PDPA):</span> {PDPA_NOTICE}
+      </p>
       <div className="mt-3 overflow-x-auto">
         <table className="w-full min-w-[480px] text-sm tabular-nums">
           <thead className="text-left text-ink-3">
