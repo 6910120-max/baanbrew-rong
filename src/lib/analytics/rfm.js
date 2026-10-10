@@ -8,12 +8,24 @@ import { daysBetween } from "../../lab3/time.js";
  * ค่าที่เท่ากันต้องได้คะแนนเท่ากันเสมอ: score = 1 + floor(5 × จำนวนค่าที่ "น้อยกว่า" / n)
  */
 export function percentileScores(values) {
-  throw new Error("ยังไม่ได้ทำ: percentileScores");
+  const n = values.length;
+  // จำนวนค่าที่ "น้อยกว่า" ของแต่ละค่า: เรียงแล้วนับครั้งเดียว ค่าที่เท่ากันจึงได้จำนวนเท่ากัน = คะแนนเท่ากัน
+  const sorted = [...values].sort((a, b) => a - b);
+  const lessThan = new Map();
+  sorted.forEach((v, i) => {
+    if (!lessThan.has(v)) lessThan.set(v, i); // ตำแหน่งแรกของค่านั้น = จำนวนค่าที่น้อยกว่า
+  });
+  return values.map((v) => 1 + Math.floor((5 * lessThan.get(v)) / n)); // คืนตามลำดับข้อมูลเข้า
 }
 
 /** กติกาตั้งชื่อกลุ่ม ตรวจจากบนลงล่าง ข้อแรกที่ตรงคือคำตอบ */
 export function segmentOf(r, f) {
-  throw new Error("ยังไม่ได้ทำ: segmentOf");
+  if (r >= 4 && f >= 4) return "Champions";
+  if (r >= 3 && f >= 4) return "Loyal";
+  if (r >= 4 && f <= 2) return "New";
+  if (r <= 2 && f >= 3) return "At Risk";
+  if (r <= 2) return "Lost";
+  return "Need Attention";
 }
 
 export const SEGMENTS = [
@@ -33,5 +45,37 @@ export const SEGMENTS = [
  *   segments:  { segment, customers, revenue, revenueShare, customerShare } เรียงตาม SEGMENTS
  */
 export function computeRfm(rows, asOf) {
-  throw new Error("ยังไม่ได้ทำ: computeRfm");
+  // 1) รวมแถวเป็นรายลูกค้า: วันล่าสุดที่มา, เซ็ตของเลขบิล (นับบิล ไม่ใช่นับแถว), ยอดรวม
+  const byCustomer = new Map();
+  for (const x of rows) {
+    if (!x.customer_id) continue; // walk-in ไม่นับ
+    let c = byCustomer.get(x.customer_id);
+    if (!c) byCustomer.set(x.customer_id, (c = { last: x.date, bills: new Set(), M: 0 }));
+    if (x.date > c.last) c.last = x.date;
+    c.bills.add(x.order_id);
+    c.M += x.revenue;
+  }
+
+  const base = [...byCustomer].map(([id, c]) => ({ id, R: daysBetween(c.last, asOf), F: c.bills.size, M: c.M }));
+
+  // 2) คะแนน 1–5 · R ยิ่งน้อยยิ่งดี จึงกลับเครื่องหมายก่อนให้คะแนน
+  const r = percentileScores(base.map((c) => -c.R));
+  const f = percentileScores(base.map((c) => c.F));
+  const m = percentileScores(base.map((c) => c.M));
+  const customers = base.map((c, i) => ({ ...c, r: r[i], f: f[i], m: m[i], segment: segmentOf(r[i], f[i]) }));
+
+  // 3) สรุปรายกลุ่ม เรียงตาม SEGMENTS (กลุ่มที่ไม่มีใครก็ยังแสดงเป็น 0)
+  const totalRevenue = customers.reduce((s, c) => s + c.M, 0);
+  const segments = SEGMENTS.map(({ id }) => {
+    const list = customers.filter((c) => c.segment === id);
+    const revenue = list.reduce((s, c) => s + c.M, 0);
+    return {
+      segment: id,
+      customers: list.length,
+      revenue,
+      revenueShare: totalRevenue ? revenue / totalRevenue : 0,
+      customerShare: customers.length ? list.length / customers.length : 0,
+    };
+  });
+  return { customers, segments, asOf };
 }
