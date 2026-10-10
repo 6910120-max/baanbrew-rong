@@ -15,7 +15,6 @@ import MemberCompare from './components/MemberCompare'
 import RfmSegments from './components/RfmSegments'
 import CustomerSection from './components/CustomerSection'
 import TabBar from './components/TabBar'
-import AnalyticsTab from './components/AnalyticsTab'
 import Lab2Page from './lab2/Lab2Page'
 
 // Lab 3 (Firebase) โหลดเมื่อเปิดแท็บเท่านั้น เพื่อไม่ให้หน้าอื่นช้าลง
@@ -34,7 +33,6 @@ import {
   RFM_ACTIVE_DAYS,
   RFM_FREQUENT_BILLS,
 } from './lib/metrics'
-import { abcAnalysis, cohortRetention, rfmScores } from './lib/analytics'
 import { loadOptionalCsv, loadSalesFromFile, loadSalesFromUrl, MissingColumnsError, SalesFileMissingError } from './lib/loadSales'
 import { formatBaht, formatNumber, formatPercent } from './lib/format'
 import { I18nProvider, useI18n } from './lib/i18n'
@@ -133,18 +131,6 @@ function Dashboard({ settings, onSettingsChange }) {
     return customerDashboard(customers, rows, filterRows(rows, f), f)
   }, [dash, customers]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // RFM / ABC follow the selected range; cohort uses every date (it needs each member's true first month)
-  const analytics = useMemo(() => {
-    if (!dash || tab !== 'analytics') return null
-    const f = { ...range, branch: filters.branch, channel: filters.channel }
-    const current = filterRows(rows, f)
-    return {
-      rfm: rfmScores(current, range.to),
-      abc: abcAnalysis(current),
-      cohort: cohortRetention(filterRows(rows, { ...f, from: bounds.min, to: bounds.max })),
-    }
-  }, [dash, tab]) // eslint-disable-line react-hooks/exhaustive-deps
-
   const changeFilters = (patch) =>
     setFilters((f) => {
       const next = { ...f, ...patch }
@@ -221,8 +207,6 @@ function Dashboard({ settings, onSettingsChange }) {
                   <Suspense fallback={<div className="rounded-2xl border border-line bg-surface p-6 text-ink-2">{t('loading')}</div>}>
                     <Lab3Tab view={tab} />
                   </Suspense>
-                ) : tab === 'analytics' ? (
-                  analytics && <AnalyticsTab analytics={analytics} products={products} />
                 ) : (
                   <DashboardBody dash={dash} custDash={custDash} tab={tab} />
                 )}
