@@ -1,6 +1,6 @@
 // Lab 4.4–4.5 · พยากรณ์และวันผิดปกติ · หน้าตาใช้ธีมของโปรเจกต์ ส่วนคำนวณมาจาก src/lib/analytics/
 // คำนวณในเบราว์เซอร์จาก analytics/daily (ยอดรายวันแยกสาขา ~2,700 แถว) จึงเปลี่ยนสาขาได้ทันทีโดยไม่อ่าน Firestore เพิ่ม
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ResponsiveContainer, ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, ReferenceDot } from 'recharts'
 import { AnalyticsShell, Card, Pending, Insight, MAIN, GREEN, MUTED, INK, thaiDay, tooltipStyle } from './ui.jsx'
 import { useAnalytics } from './useAnalytics.js'
@@ -95,7 +95,7 @@ function ForecastCard({ daily, branch, onBranch }) {
   const m = week && r?.weekly ? r.weekly : r?.bt
   const name = branch ?? 'ภาพรวม'
   return (
-    <Card title="พยากรณ์ยอดขาย 28 วัน" sub="ค่าเฉลี่ยวันเดียวกันของสัปดาห์ 8 สัปดาห์ล่าสุด · ย้อนทดสอบด้วยการซ่อน 28 วันสุดท้ายแล้วเทียบกับของจริง">
+    <Card title="พยากรณ์ยอดขาย 28 วัน" sub="ค่าเฉลี่ยวันเดียวกันของสัปดาห์ 8 สัปดาห์ล่าสุด · ย้อนทดสอบด้วยการซ่อน 28 วันสุดท้ายแล้วเทียบกับของจริง · เลือกสาขาหรือรายวัน/รายสัปดาห์ด้านล่าง และเอาเมาส์ชี้กราฟเพื่อดูยอดแต่ละวัน">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-1" role="group" aria-label="เลือกสาขา">
           {[null, ...BRANCHES].map((b) => (
@@ -231,6 +231,11 @@ const ABOVE = '#d97706' // สูงกว่าปกติ = ส้ม · ต�
 
 /** Lab 4.5B: คลิกแถวแล้วซูมดูสาขานั้น ±28 วันรอบวันที่เลือก ยอดจริงเทียบค่าปกติ */
 function AnomalyZoom({ focus, daily, all, onClose }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    // กราฟอยู่ใต้ตารางทั้ง 15 แถว: เลื่อนหน้าให้เห็นกราฟเมื่อเลือกแถวใหม่
+    ref.current?.scrollIntoView({ block: 'nearest' }) // เลื่อนทันทีเท่าที่จำเป็น (ไม่ใช้ smooth เพราะบางเบราว์เซอร์/โหมดลดการเคลื่อนไหวไม่เลื่อน)
+  }, [focus])
   const data = useMemo(() => {
     const from = addDays(focus.date, -ZOOM_DAYS)
     const to = addDays(focus.date, ZOOM_DAYS)
@@ -242,7 +247,7 @@ function AnomalyZoom({ focus, daily, all, onClose }) {
   const low = focus.change < 0
   const color = low ? 'var(--down)' : ABOVE
   return (
-    <div className="mt-4 rounded-xl border border-line bg-surface-2/50 p-4" role="region" aria-label={`ยอดขาย ${focus.branch} รอบวันที่ ${thaiDay(focus.date)}`}>
+    <div ref={ref} className="mt-4 rounded-xl border border-line bg-surface-2/50 p-4" role="region" aria-label={`ยอดขาย ${focus.branch} รอบวันที่ ${thaiDay(focus.date)}`}>
       <div className="flex items-start justify-between gap-2">
         <div>
           <h3 className="font-semibold text-ink">
@@ -279,6 +284,7 @@ function AnomalyZoom({ focus, daily, all, onClose }) {
 
 function AnomalyCard({ daily, holidays }) {
   const [focus, setFocus] = useState(null)
+  const [tried, setTried] = useState(false) // เคยคลิกแล้ว = เลิกกระพริบคำใบ้
   const result = useMemo(() => tryRun(() => scoreAnomalies(daily, holidays)), [daily, holidays])
   if (result.error) {
     return (
@@ -292,6 +298,12 @@ function AnomalyCard({ daily, holidays }) {
   const holidayHits = all.filter((a) => a.holiday).slice(0, 5)
   return (
     <Card title="วันที่ยอดขายผิดปกติ 15 อันดับ" sub="เทียบกับค่ากลางของวันเดียวกันของสัปดาห์ใน 8 สัปดาห์ก่อน · ไม่นับวันหยุดราชการ">
+      <p className="mb-3 inline-flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-1.5 text-sm text-ink-2">
+        <span aria-hidden className={tried ? '' : 'motion-safe:animate-bounce'}>👆</span>
+        <span>
+          <span className="font-medium text-ink">คลิกที่แถวไหนก็ได้</span> เพื่อดูกราฟของสาขานั้นรอบวันดังกล่าว (±{ZOOM_DAYS} วัน) · คลิกซ้ำเพื่อปิด
+        </span>
+      </p>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[600px] text-sm tabular-nums">
           <thead className="text-left text-ink-3">
@@ -302,6 +314,7 @@ function AnomalyCard({ daily, holidays }) {
               <th className="text-right font-medium">ยอดจริง</th>
               <th className="text-right font-medium">ปกติ</th>
               <th className="pl-4 font-medium">ต่างจากปกติ</th>
+              <th className="w-24" />
             </tr>
           </thead>
           <tbody>
@@ -310,8 +323,21 @@ function AnomalyCard({ daily, holidays }) {
               return (
                 <tr
                   key={a.date + a.branch}
-                  onClick={() => setFocus(sel ? null : a)}
-                  className={`cursor-pointer border-t border-line transition hover:bg-surface-2 ${sel ? 'bg-surface-2 ring-2 ring-inset ring-brand' : ''}`}
+                  tabIndex={0}
+                  aria-expanded={Boolean(sel)}
+                  title={sel ? 'คลิกเพื่อปิดกราฟ' : 'คลิกเพื่อดูกราฟ'}
+                  onClick={() => {
+                    setTried(true)
+                    setFocus(sel ? null : a)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      setTried(true)
+                      setFocus(sel ? null : a)
+                    }
+                  }}
+                  className={`group cursor-pointer border-t border-line transition hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:outline-none ${sel ? 'bg-surface-2 ring-2 ring-inset ring-brand' : ''}`}
                 >
                   <td className="py-1.5 text-ink-3">{i + 1}</td>
                   <td className="text-ink">
@@ -325,6 +351,21 @@ function AnomalyCard({ daily, holidays }) {
                       <span className="font-medium text-down">▼ ต่ำกว่าปกติ {Math.round(-a.change * 100)}%</span>
                     ) : (
                       <span className="font-medium text-up">▲ สูงกว่าปกติ {Math.round(a.change * 100)}%</span>
+                    )}
+                  </td>
+                  <td className="pr-1 text-right text-xs whitespace-nowrap">
+                    {sel ? (
+                      <span className="font-medium text-brand">▾ กำลังดูกราฟ</span>
+                    ) : (
+                      <span
+                        className={`rounded-full px-2 py-0.5 transition ${
+                          i === 0 && !tried
+                            ? 'bg-brand font-medium text-white motion-safe:animate-pulse'
+                            : 'text-ink-3 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100'
+                        }`}
+                      >
+                        ดูกราฟ ›
+                      </span>
                     )}
                   </td>
                 </tr>
