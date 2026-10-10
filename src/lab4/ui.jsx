@@ -1,4 +1,5 @@
 // ส่วนประกอบร่วมของแท็บ Lab 4 ในธีมของเรา (สี/โหมดมืดมาจาก CSS variables ใน index.css)
+import { useState } from 'react'
 import ChartCard from '../components/ChartCard'
 import LoginPanel from '../lab3/LoginPanel.jsx'
 
@@ -32,6 +33,20 @@ export function Pending({ lab, error }) {
 
 export function Insight({ children }) {
   return <p className="mt-3 rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2">💡 {children}</p>
+}
+
+/** รูปโปรไฟล์ผู้ใช้ (รูปจาก Google) · ไม่มีรูปหรือโหลดไม่ได้ แสดงอักษรแรกของชื่อแทน */
+function Avatar({ user }) {
+  const [failed, setFailed] = useState(false)
+  const name = user.displayName ?? user.email?.split('@')[0] ?? 'ผู้ใช้'
+  if (user.photoURL && !failed) {
+    return <img src={user.photoURL} alt="" referrerPolicy="no-referrer" onError={() => setFailed(true)} className="h-8 w-8 rounded-full border border-line object-cover" />
+  }
+  return (
+    <span aria-hidden className="bg-grad grid h-8 w-8 place-items-center rounded-full text-sm font-semibold text-white">
+      {[...name][0]?.toUpperCase() ?? '?'}
+    </span>
+  )
 }
 
 /** ส่วนหัวร่วม: ล็อกอิน, ความสดของข้อมูล, จำนวนเอกสารที่อ่าน */
@@ -71,6 +86,7 @@ export function AnalyticsShell({ source, state, children }) {
           )}
         </p>
         <p className="flex items-center gap-2">
+          <Avatar user={user} />
           <span className="text-ink-2">{user.displayName ?? user.email}</span>
           <button type="button" onClick={() => source.signOut()} className="rounded-lg px-2 py-1 hover:bg-surface-2 hover:text-ink">
             ออกจากระบบ
