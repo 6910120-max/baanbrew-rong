@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-const ALL_TABS = ['overview', 'lab2', 'live', 'rules', 'customers', 'analytics', 'forecast', 'products']
+const ALL_TABS = ['overview', 'lab2', 'live', 'customers', 'analytics', 'forecast', 'rules', 'products'] // ทดสอบ Rules อยู่ขวาสุดของแท็บที่แสดง
 // แท็บที่ซ่อนไว้ก่อน (โค้ดและข้อความยังอยู่ครบ) ลบชื่อออกจากรายการนี้เพื่อเอากลับมาแสดง
 const HIDDEN_TABS = ['products']
 export const TABS = ALL_TABS.filter((t) => !HIDDEN_TABS.includes(t))
