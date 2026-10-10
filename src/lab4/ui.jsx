@@ -1,6 +1,6 @@
 // ส่วนประกอบร่วมของแท็บ Lab 4 ในธีมของเรา (สี/โหมดมืดมาจาก CSS variables ใน index.css)
-import { useState } from 'react'
 import ChartCard from '../components/ChartCard'
+import LoginPanel from '../lab3/LoginPanel.jsx'
 
 export const INK = 'var(--ink)'
 export const MUTED = 'var(--ink-3)'
@@ -34,42 +34,21 @@ export function Insight({ children }) {
   return <p className="mt-3 rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2">💡 {children}</p>
 }
 
-function authErrorText(e) {
-  const code = e?.code ?? ''
-  if (code === 'auth/popup-closed-by-user') return 'ปิดหน้าต่างล็อกอินก่อนเสร็จ ลองใหม่อีกครั้ง'
-  if (code === 'auth/unauthorized-domain') return 'โดเมนนี้ยังไม่ได้รับอนุญาต เพิ่มใน Authentication → Settings → Authorized domains'
-  if (code === 'auth/operation-not-allowed') return 'ยังไม่ได้เปิด Google sign-in ใน Authentication → Sign-in method'
-  if (code === 'auth/popup-blocked') return 'เบราว์เซอร์บล็อก popup อนุญาต popup สำหรับเว็บนี้แล้วลองใหม่'
-  return e?.message ?? String(e)
-}
-
-function LoginCard({ onSignIn, error }) {
-  return (
-    <div className="mx-auto max-w-md rounded-2xl border border-line bg-surface p-8 text-center shadow-sm">
-      <h2 className="text-xl font-semibold text-ink">ต้องเข้าสู่ระบบก่อน</h2>
-      <p className="mt-2 text-sm text-ink-2">ผลวิเคราะห์ลูกค้าเปิดให้เฉพาะผู้ที่ล็อกอินแล้ว (ล็อกอินเดียวกับแท็บ “สด”)</p>
-      <button
-        type="button"
-        onClick={onSignIn}
-        className="bg-grad mt-5 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:brightness-110"
-      >
-        เข้าสู่ระบบด้วย Google
-      </button>
-      {error && (
-        <p role="alert" className="mt-4 rounded-lg bg-down/10 p-2.5 text-sm text-down">
-          ❌ {error}
-        </p>
-      )}
-    </div>
-  )
-}
-
 /** ส่วนหัวร่วม: ล็อกอิน, ความสดของข้อมูล, จำนวนเอกสารที่อ่าน */
 export function AnalyticsShell({ source, state, children }) {
   const { user, data, error } = state
-  const [authError, setAuthError] = useState(null)
   if (user === undefined) return <div className="rounded-2xl border border-line bg-surface p-6 text-ink-2">กำลังตรวจสอบการเข้าสู่ระบบ…</div>
-  if (!user) return <LoginCard onSignIn={() => source.signIn().catch((e) => setAuthError(authErrorText(e)))} error={authError} />
+  if (!user) {
+    // การ์ดล็อกอินเดียวกับแท็บ "สด · Firestore" (ล็อกอินครั้งเดียว ใช้ได้ทั้งสองแท็บ) · โหมดสาธิตซ่อนฟอร์มอีเมลเพราะไม่มี Firebase จริง
+    return (
+      <LoginPanel
+        kicker="บ้านบรู · ผลวิเคราะห์ลูกค้า"
+        footnote="ผลวิเคราะห์ลูกค้าเปิดดูได้เฉพาะผู้ที่ล็อกอินเท่านั้น (ล็อกอินเดียวกับแท็บ “สด”)"
+        onGoogle={() => source.signIn()}
+        emailLogin={source.mode !== 'demo'}
+      />
+    )
+  }
   const m = data?.meta
   return (
     <div className="space-y-4 sm:space-y-6">
