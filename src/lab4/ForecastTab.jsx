@@ -8,7 +8,8 @@ import { toSeries } from '../lib/analytics/daily.js'
 import { seasonalForecast, backtest, mape } from '../lib/analytics/forecast.js'
 import { toWeekly } from '../lib/analytics/weekly.js'
 import { scoreAnomalies } from '../lib/analytics/anomaly.js'
-import { formatBaht, formatBahtCompact } from '../lib/format'
+import KpiCard from '../components/KpiCard'
+import { formatBaht, formatBahtCompact, formatNumber } from '../lib/format'
 
 const BRANCHES = ['สยาม', 'สีลม', 'อารีย์', 'บางนา', 'มหาวิทยาลัย']
 const HORIZON = 28
@@ -45,8 +46,7 @@ function Stat({ label, value, note, muted }) {
   )
 }
 
-function ForecastCard({ daily }) {
-  const [branch, setBranch] = useState(null)
+function ForecastCard({ daily, branch, onBranch }) {
   const [unit, setUnit] = useState('day') // 'day' | 'week' (Lab 4.4B)
   const result = useMemo(
     () =>
@@ -98,7 +98,7 @@ function ForecastCard({ daily }) {
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-1" role="group" aria-label="เลือกสาขา">
           {[null, ...BRANCHES].map((b) => (
-            <Pill key={b ?? 'all'} on={branch === b} onClick={() => setBranch(b)}>
+            <Pill key={b ?? 'all'} on={branch === b} onClick={() => onBranch(b)}>
               {b ?? 'รวม'}
             </Pill>
           ))}
@@ -147,7 +147,79 @@ function ForecastCard({ daily }) {
             {r.weekly && <> · รวมเป็นรายสัปดาห์ความคลาดเคลื่อนเหลือ {r.weekly.mapeSeasonal.toFixed(1)}% (รายวัน {r.bt.mapeSeasonal.toFixed(1)}%) เพราะความพลาดรายวันบางส่วนหักล้างกันเมื่อรวมทั้งสัปดาห์</>}{' '}
             ใช้วางแผนสต็อกและกะพนักงานรายสัปดาห์ได้ แต่ไม่ควรใช้ตัดสินยอดรายวันของสาขาเดียว
           </Insight>
+          <p className="mt-3 text-xs leading-relaxed text-ink-3">
+            <span className="font-medium text-ink-2">แถบช่วงคาดการณ์คำนวณจากอะไร:</span> ยอดคาดการณ์แต่ละวัน ± 1.28 × ส่วนเบี่ยงเบนมาตรฐานของ % ความคลาดเคลื่อน
+            ที่วัดได้จากการย้อนทดสอบ 28 วัน (ค่า 1.28 ให้ช่วงที่ครอบคลุมราว 80% ของวัน) · {name} ตอนนี้ได้ ±{(r.bt.band * 100).toFixed(0)}% ของยอดคาดการณ์
+            · ยิ่งย้อนทดสอบพลาดไม่สม่ำเสมอแถบยิ่งกว้าง · แถบนี้อิงความพลาดในอดีต ไม่ได้รวมเหตุการณ์พิเศษอย่างไฟดับหรือน้ำท่วม
+            {week && ' · มุมมองรายสัปดาห์ไม่วาดแถบ เพราะความพลาดรายวันหักล้างกันและมีสัปดาห์ให้วัดเพียงไม่กี่ค่า'}
+          </p>
         </>
+      )}
+    </Card>
+  )
+}
+
+/** ควรเตรียมของเท่าไร: ยอดคาดการณ์ 7 วัน × สัดส่วนยอดขายของแต่ละเมนูกลุ่ม A (Lab 4.4B) */
+function PrepCard({ daily, branch, abc }) {
+  const [showAll, setShowAll] = useState(false)
+  const forecast = useMemo(() => tryRun(() => seasonalForecast(toSeries(daily, branch), 7).reduce((sum, f) => sum + f.forecast, 0)), [daily, branch])
+  if (abc.error || forecast.error) {
+    return (
+      <Card title="ควรเตรียมของเท่าไร">
+        <Pending lab={abc.error ? 'Lab 4.2' : 'Lab 4.4'} error={abc.error ?? forecast.error} />
+      </Card>
+    )
+  }
+  const next7 = forecast.value
+  const aItems = abc.items.filter((i) => i.cls === 'A')
+  const rows = aItems.map((i) => ({ ...i, expected: next7 * i.share }))
+  const aShare = aItems.reduce((sum, i) => sum + i.share, 0)
+  const shown = showAll ? rows : rows.slice(0, 10)
+  const maxExpected = rows[0]?.expected || 1
+  return (
+    <Card
+      title="ควรเตรียมของเท่าไร (7 วันข้างหน้า)"
+      sub="ยอดคาดการณ์ 7 วัน × สัดส่วนยอดขายของเมนูกลุ่ม A · เมนูที่ทำยอดหลักของร้านต้องมีของไม่ขาด"
+      filename="prep-group-a"
+      table={{
+        columns: [
+          { key: 'rank', label: 'อันดับ', align: 'left' },
+          { key: 'name', label: 'เมนู', align: 'left', csv: (r) => `${r.product_id} ${r.name}` },
+          { key: 'share', label: 'สัดส่วนยอดขาย', format: (v) => `${(v * 100).toFixed(1)}%`, csv: (r) => (r.share * 100).toFixed(2) },
+          { key: 'expected', label: 'ยอดที่คาดว่าจะขาย 7 วัน', format: (v) => formatBaht(v), csv: (r) => Math.round(r.expected) },
+        ],
+        rows,
+      }}
+      footer="สัดส่วนเมนูมาจาก ABC ของทุกสาขารวมกัน จึงเป็นค่าประมาณเมื่อเลือกดูสาขาเดียว · เป็นยอดเงิน (บาท) ไม่ใช่จำนวนชิ้น แปลงเป็นชิ้นด้วยราคาเมนู · ใช้เป็นแนวทางเบื้องต้น ไม่ใช่คำสั่งซื้อ"
+    >
+      <div className="grid gap-3 sm:grid-cols-2">
+        <KpiCard accent label={`ยอดคาดการณ์ 7 วัน (${branch ?? 'รวมทุกสาขา'})`} value={formatBaht(next7)} />
+        <KpiCard
+          label={`เมนูกลุ่ม A ${formatNumber(aItems.length)} เมนู คิดเป็น ${(aShare * 100).toFixed(1)}% ของยอดขาย`}
+          value={formatBaht(next7 * aShare)}
+          hint="ยอดที่คาดว่ามาจากเมนูหลักเหล่านี้"
+        />
+      </div>
+      <ul className="mt-4 space-y-1.5">
+        {shown.map((i) => (
+          <li key={i.product_id} className="grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-x-3 text-sm">
+            <span className="text-ink-3 tabular-nums">{i.rank}</span>
+            <span className="min-w-0">
+              <span className="block truncate text-ink">
+                {i.name} <span className="text-xs text-ink-3">{(i.share * 100).toFixed(1)}%</span>
+              </span>
+              <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-surface-2">
+                <span className="block h-full rounded-full" style={{ width: `${(i.expected / maxExpected) * 100}%`, background: 'var(--grad-bar)' }} />
+              </span>
+            </span>
+            <span className="text-right font-medium tabular-nums text-ink">{formatBaht(i.expected)}</span>
+          </li>
+        ))}
+      </ul>
+      {rows.length > 10 && (
+        <button type="button" onClick={() => setShowAll((v) => !v)} className="mt-3 rounded-lg px-3 py-1.5 text-sm text-ink-2 transition hover:bg-surface-2 hover:text-ink">
+          {showAll ? 'แสดงเฉพาะ 10 อันดับแรก' : `ดูทั้ง ${rows.length} เมนู`}
+        </button>
       )}
     </Card>
   )
@@ -220,6 +292,7 @@ function AnomalyCard({ daily, holidays }) {
 
 export default function ForecastTab({ source }) {
   const state = useAnalytics(source)
+  const [branch, setBranch] = useState(null) // null = รวมทุกสาขา (ใช้ร่วมกันระหว่างการ์ดพยากรณ์และการ์ดเตรียมของ)
   return (
     <AnalyticsShell source={source} state={state}>
       {(d) =>
@@ -232,7 +305,8 @@ export default function ForecastTab({ source }) {
                 🚨 ยอดวันล่าสุดผิดปกติ: {d.meta.alerts.map((a) => `${a.branch} ${formatBaht(a.actual)} (ปกติ ${formatBaht(a.expected)})`).join(', ')}
               </p>
             )}
-            <ForecastCard daily={d.daily.rows} />
+            <ForecastCard daily={d.daily.rows} branch={branch} onBranch={setBranch} />
+            <PrepCard daily={d.daily.rows} branch={branch} abc={d.abc} />
             <AnomalyCard daily={d.daily.rows} holidays={d.meta.holidays ?? {}} />
           </>
         )
