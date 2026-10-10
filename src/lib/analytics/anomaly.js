@@ -19,7 +19,32 @@ export const median = (xs) => {
  *   { date, branch, actual, expected, change (สัดส่วน เช่น -0.9 = ต่ำกว่าปกติ 90%), score, holiday }
  */
 export function scoreAnomalies(daily, holidays = {}, { weeks = 8, minWeeks = 4, smooth = 1000 } = {}) {
-  throw new Error("ยังไม่ได้ทำ: scoreAnomalies");
+  // ยอดของแต่ละสาขา/วัน ไว้ค้นหาวันเดียวกันของสัปดาห์ก่อน ๆ
+  const revenueOf = new Map(daily.map((d) => [`${d.branch}|${d.date}`, d.revenue]));
+
+  const scored = [];
+  for (const d of daily) {
+    // วันเดียวกันของสัปดาห์ย้อนหลังสูงสุด `weeks` ครั้ง (วันที่ไม่มีข้อมูลข้าม ไม่นับเป็น 0)
+    const past = [];
+    for (let w = 1; w <= weeks; w++) {
+      const v = revenueOf.get(`${d.branch}|${addDays(d.date, -7 * w)}`);
+      if (v !== undefined) past.push(v);
+    }
+    if (past.length < minWeeks) continue; // ประวัติสั้นเกินไป ไม่ให้คะแนน
+
+    const expected = median(past); // ค่ากลางทนต่อค่าสุดโต่ง วันไฟดับในอดีตจึงไม่ดึงค่าปกติเพี้ยน
+    scored.push({
+      date: d.date,
+      branch: d.branch,
+      actual: d.revenue,
+      expected,
+      change: expected > 0 ? d.revenue / expected - 1 : 0, // -0.9 = ต่ำกว่าปกติ 90%
+      score: Math.log((d.revenue + smooth) / (expected + smooth)),
+      holiday: holidays[d.date] ?? null, // วันหยุดติดป้ายไว้ แต่ topAnomalies จะไม่นำไปจัดอันดับ
+    });
+  }
+  // ผิดปกติมากสุดก่อน (ทั้งสูงและต่ำ) · เท่ากันเรียงตามวันที่และสาขาเพื่อให้ผลคงที่
+  return scored.sort((a, b) => Math.abs(b.score) - Math.abs(a.score) || a.date.localeCompare(b.date) || a.branch.localeCompare(b.branch));
 }
 
 /** อันดับวันผิดปกติที่ควรตรวจสอบ (ไม่รวมวันหยุด) */
