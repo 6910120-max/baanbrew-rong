@@ -1,6 +1,9 @@
 // Calculation logic for the sales dashboard.
 // Each row in sales.csv is one line item; several rows can share an order_id (one bill).
 
+// Names used by the course pack's Lab 4 screens (src/lab4/*): same helpers as src/lib/format.js
+export { formatBaht as fmtBaht, formatBahtCompact as fmtShortBaht } from './format'
+
 // ---------- Data preparation ----------
 
 /** Revenue for one row = qty × unit_price */

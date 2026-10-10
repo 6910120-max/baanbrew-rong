@@ -13,9 +13,10 @@ export const thaiDay = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('
 export const thaiMonth = (ym) => new Date(ym + '-01T00:00:00').toLocaleDateString('th-TH', { month: 'short', year: '2-digit' })
 export const tooltipStyle = { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 13 }
 
-export function Card({ title, sub, children, table, filename, footer }) {
+export function Card({ title, sub, children, table, filename, footer, right }) {
   return (
     <ChartCard title={title} subtitle={sub} table={table} filename={filename} footer={footer}>
+      {right && <div className="mb-3">{right}</div>}
       {children}
     </ChartCard>
   )
