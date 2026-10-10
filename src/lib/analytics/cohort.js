@@ -4,7 +4,9 @@
 
 /** จำนวนเดือนจาก a ถึง b เช่น monthIndex("2025-11", "2026-02") = 3 */
 export function monthIndex(a, b) {
-  throw new Error("ยังไม่ได้ทำ: monthIndex");
+  const [ya, ma] = a.split("-").map(Number);
+  const [yb, mb] = b.split("-").map(Number);
+  return (yb - ya) * 12 + (mb - ma); // ข้ามปีได้ เพราะแปลงปี×12 + เดือนก่อนลบ
 }
 
 /**
@@ -14,5 +16,40 @@ export function monthIndex(a, b) {
  *   retention ยาวเท่าจำนวนเดือนที่สังเกตได้ของ cohort นั้น (ถึง lastMonth)
  */
 export function computeCohorts(rows, asOf) {
-  throw new Error("ยังไม่ได้ทำ: computeCohorts");
+  const lastMonth = asOf.slice(0, 7);
+
+  // 1) เดือนที่ลูกค้าแต่ละคนมาซื้อ (Set = ซื้อกี่บิลในเดือนเดียวกันก็นับเป็นครั้งเดียว)
+  const monthsByCustomer = new Map();
+  for (const x of rows) {
+    if (!x.customer_id) continue; // walk-in ไม่นับ
+    let set = monthsByCustomer.get(x.customer_id);
+    if (!set) monthsByCustomer.set(x.customer_id, (set = new Set()));
+    set.add(x.date.slice(0, 7));
+  }
+
+  // 2) จัดเข้า cohort ตามเดือนแรก แล้วนับว่ากลับมาในเดือนที่ k กี่คน
+  const byCohort = new Map(); // เดือนแรก -> { size, active[k] }
+  for (const set of monthsByCustomer.values()) {
+    const first = [...set].sort()[0]; // "YYYY-MM" เรียงตามตัวอักษรได้ถูกต้อง
+    let c = byCohort.get(first);
+    if (!c) byCohort.set(first, (c = { size: 0, active: [] }));
+    c.size += 1;
+    for (const m of set) {
+      const k = monthIndex(first, m);
+      c.active[k] = (c.active[k] ?? 0) + 1;
+    }
+  }
+
+  // 3) retention ยาวเท่าจำนวนเดือนที่สังเกตได้ (ถึง lastMonth) · เดือนที่ไม่มีใครกลับมาคือ 0 ไม่ใช่ "ไม่มีข้อมูล"
+  const cohorts = [...byCohort.keys()].sort().map((cohort) => {
+    const { size, active } = byCohort.get(cohort);
+    const months = monthIndex(cohort, lastMonth) + 1;
+    return { cohort, size, retention: Array.from({ length: months }, (_, k) => (active[k] ?? 0) / size) };
+  });
+
+  // 4) เดือนสุดท้ายของข้อมูลครบทั้งเดือนหรือไม่ (ใช้เตือนว่าช่องล่างขวาต่ำเพราะข้อมูลยังไม่ครบ ไม่ใช่เพราะลูกค้าหาย)
+  const [y, m] = lastMonth.split("-").map(Number);
+  const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate(); // วันที่ 0 ของเดือนถัดไป = วันสุดท้ายของเดือนนี้
+  const daysInLastMonth = Number(asOf.slice(8, 10));
+  return { cohorts, lastMonth, lastMonthPartial: daysInLastMonth < daysInMonth, daysInLastMonth, daysInMonth };
 }
