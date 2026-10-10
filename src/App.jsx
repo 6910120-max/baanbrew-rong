@@ -19,6 +19,9 @@ import Lab2Page from './lab2/Lab2Page'
 
 // Lab 3 (Firebase) โหลดเมื่อเปิดแท็บเท่านั้น เพื่อไม่ให้หน้าอื่นช้าลง
 const Lab3Tab = lazy(() => import('./lab3/Lab3Tab'))
+// Lab 4 (ผลวิเคราะห์ RFM / Cohort / ABC) โหลดตอนเปิดแท็บเช่นกัน · เปิด /?demo เพื่อคำนวณในเบราว์เซอร์โดยไม่ต้องมี Firebase
+const Lab4Tab = lazy(() => import('./lab4/Lab4Tab'))
+const DEMO = new URLSearchParams(window.location.search).has('demo')
 import {
   addDays,
   branchNameMap,
@@ -97,6 +100,12 @@ function Dashboard({ settings, onSettingsChange }) {
   useEffect(() => {
     loadOptionalCsv('/products.csv', ['product_id', 'product_name']).then((p) => p && setProducts(p))
   }, [])
+  const [holidays, setHolidays] = useState({})
+  useEffect(() => {
+    loadOptionalCsv('/thai_holidays.csv', ['date', 'holiday']).then((h) =>
+      h && setHolidays(Object.fromEntries(h.map((x) => [x.date, x.holiday]))),
+    )
+  }, [])
   const [customers, setCustomers] = useState(null)
   useEffect(() => {
     Promise.all([
@@ -141,7 +150,7 @@ function Dashboard({ settings, onSettingsChange }) {
 
   const subtitle = range ? t('dataRange', { from: d.shortDate(range.from), to: d.shortDate(range.to) }) : null
   // แท็บ Lab 2.2 / สด / ทดสอบ Rules ไม่ใช้ตัวกรองด้านบน จึงซ่อนตัวกรองในแท็บเหล่านั้น
-  const usesFilters = tab !== 'lab2' && tab !== 'live' && tab !== 'rules'
+  const usesFilters = tab !== 'lab2' && tab !== 'live' && tab !== 'rules' && tab !== 'analytics'
 
   return (
     <div className="min-h-screen bg-page">
@@ -206,6 +215,10 @@ function Dashboard({ settings, onSettingsChange }) {
                 ) : tab === 'live' || tab === 'rules' ? (
                   <Suspense fallback={<div className="rounded-2xl border border-line bg-surface p-6 text-ink-2">{t('loading')}</div>}>
                     <Lab3Tab view={tab} />
+                  </Suspense>
+                ) : tab === 'analytics' ? (
+                  <Suspense fallback={<div className="rounded-2xl border border-line bg-surface p-6 text-ink-2">{t('loading')}</div>}>
+                    <Lab4Tab rows={rows} products={products} holidays={holidays} demo={DEMO} />
                   </Suspense>
                 ) : (
                   <DashboardBody dash={dash} custDash={custDash} tab={tab} />

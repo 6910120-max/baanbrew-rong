@@ -46,8 +46,10 @@ export function prepareRows(rawRows) {
     if (!r.datetime || !Number.isFinite(amount)) continue
     const date = thaiDate(r.datetime)
     if (!weekdayCache.has(date)) weekdayCache.set(date, weekdayOf(date))
+    const orderId = r.order_id
+    const customer = r.customer_id?.trim() ?? '' // blank = walk-in customer (not a member)
     rows.push({
-      orderId: r.order_id,
+      orderId,
       date,
       hour: Number(r.datetime.slice(11, 13)),
       weekday: weekdayCache.get(date),
@@ -55,9 +57,15 @@ export function prepareRows(rawRows) {
       product: r.product_id?.trim() || '—',
       qty: Number(r.qty),
       amount,
-      customer: r.customer_id?.trim() ?? '', // blank = walk-in customer (not a member)
+      customer,
       payment: r.payment_method?.trim() || '—',
       channel: r.channel?.trim() || '—',
+      // Same data under the names used by src/lib/analytics/ (the course pack's row shape: tests and build-analytics.mjs)
+      order_id: orderId,
+      datetime: r.datetime,
+      product_id: r.product_id?.trim() || '—',
+      customer_id: customer,
+      revenue: amount,
     })
   }
   return rows

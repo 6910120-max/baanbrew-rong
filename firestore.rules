@@ -72,6 +72,13 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // ผลวิเคราะห์ (Lab 4): อ่านได้เมื่อล็อกอิน (มีข้อมูลลูกค้า) · เขียนจากหน้าเว็บไม่ได้
+    // pipeline (scripts/build-analytics.mjs) ใช้ firebase-admin ซึ่งข้าม rules จึงเขียนได้
+    match /analytics/{docId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
     // อย่างอื่นที่ไม่ได้ระบุ ปิดทั้งหมด
     match /{document=**} {
       allow read, write: if false;

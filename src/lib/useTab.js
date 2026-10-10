@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 
-export const TABS = ['overview', 'lab2', 'live', 'rules', 'customers', 'products']
+const ALL_TABS = ['overview', 'lab2', 'live', 'rules', 'customers', 'analytics', 'products']
+// แท็บที่ซ่อนไว้ก่อน (โค้ดและข้อความยังอยู่ครบ) ลบชื่อออกจากรายการนี้เพื่อเอากลับมาแสดง
+const HIDDEN_TABS = ['products']
+export const TABS = ALL_TABS.filter((t) => !HIDDEN_TABS.includes(t))
 const STORAGE_KEY = 'baanbrew-tab'
 
 /** Read the tab from the URL (#customers) first, then the last tab used in this browser, otherwise overview */

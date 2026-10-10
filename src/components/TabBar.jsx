@@ -21,6 +21,9 @@ const ICONS = {
       <path d="M6 2v2M10 2v2M14 2v2" />
     </>
   ),
+  analytics: (
+    <path d="M3 3v18h18M7 15l4-4 3 3 5-6" />
+  ),
   customers: (
     <>
       <circle cx="9" cy="8" r="4" />
