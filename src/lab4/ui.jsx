@@ -88,8 +88,15 @@ export function AnalyticsShell({ source, state, children }) {
         <p className="flex items-center gap-2">
           <Avatar user={user} />
           <span className="text-ink-2">{user.displayName ?? user.email}</span>
-          <button type="button" onClick={() => source.signOut()} className="rounded-lg px-2 py-1 hover:bg-surface-2 hover:text-ink">
-            ออกจากระบบ
+          <button
+            type="button"
+            onClick={() => source.signOut()}
+            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 font-medium text-down transition hover:bg-down/10"
+          >
+            <span>ออกจากระบบ</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+            </svg>
           </button>
         </p>
       </div>
