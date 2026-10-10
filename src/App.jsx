@@ -150,7 +150,7 @@ function Dashboard({ settings, onSettingsChange }) {
 
   const subtitle = range ? t('dataRange', { from: d.shortDate(range.from), to: d.shortDate(range.to) }) : null
   // แท็บ Lab 2.2 / สด / ทดสอบ Rules ไม่ใช้ตัวกรองด้านบน จึงซ่อนตัวกรองในแท็บเหล่านั้น
-  const usesFilters = tab !== 'lab2' && tab !== 'live' && tab !== 'rules' && tab !== 'analytics'
+  const usesFilters = tab !== 'lab2' && tab !== 'live' && tab !== 'rules' && tab !== 'analytics' && tab !== 'forecast'
 
   return (
     <div className="min-h-screen bg-page">
@@ -216,9 +216,9 @@ function Dashboard({ settings, onSettingsChange }) {
                   <Suspense fallback={<div className="rounded-2xl border border-line bg-surface p-6 text-ink-2">{t('loading')}</div>}>
                     <Lab3Tab view={tab} />
                   </Suspense>
-                ) : tab === 'analytics' ? (
+                ) : tab === 'analytics' || tab === 'forecast' ? (
                   <Suspense fallback={<div className="rounded-2xl border border-line bg-surface p-6 text-ink-2">{t('loading')}</div>}>
-                    <Lab4Tab rows={rows} products={products} holidays={holidays} demo={DEMO} />
+                    <Lab4Tab view={tab} rows={rows} products={products} holidays={holidays} demo={DEMO} />
                   </Suspense>
                 ) : (
                   <DashboardBody dash={dash} custDash={custDash} tab={tab} />
